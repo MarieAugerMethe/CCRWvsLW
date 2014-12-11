@@ -78,7 +78,7 @@ pseudo.u.test <- function(U, nP, n, graph){
   
   
   if(graph==T){
-    windows()
+    #windows()
     par(mfrow=c(1,2))
     hist(U, nB)
     acf(U)

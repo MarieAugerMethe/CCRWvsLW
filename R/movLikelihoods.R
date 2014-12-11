@@ -126,7 +126,7 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0){
                       mleMov, PRdetails, graph)
   
 	if(graph==TRUE){
-    windows()
+    #windows()
     layout(matrix(1:3,nrow=1))
     # Movemeth trajectory with CCRW 
     gamm <- matrix(c(mleMov$CCRW[1], 1-mleMov$CCRW[2], 1-mleMov$CCRW[1], mleMov$CCRW[2]),2)
