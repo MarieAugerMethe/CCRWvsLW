@@ -202,7 +202,7 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
 	##
 	# TLW
 
-	U_TLW <- ptpareto(SL,SLmin,SLmax,mleMov$TLW[1]-1)
+	U_TLW <- ptruncpareto(SL,SLmin,SLmax,mleMov$TLW[1]-1) # Used to be ptpareto
 
 	##
 	# E
