@@ -1,24 +1,21 @@
 library(CCRWvsLW)
-gII <- 0.9
-gEE <- 0.9
-lI <- 0.01
-lE <- 0.001
-kE <- 10
+mu <- 2
 a <- 1 
-mov <- simmCCRW(500,gII,gEE,lI,lE,kE,a,0.5)
-plot(mov)
+b <- 10000
+mov <- simmTLW(500,mu,a,b)
 movRes <- movLikelihoods(mov, PRdetails=TRUE)
 movRes
 
 # To look at the best model compare AICc
-AICcRes<- unlist(movRes$mle)[grep("AICc", names(unlist(movRes$mle)))] # CCRW is the best
-AICcRes - min(AICcRes) # By far
+AICcRes <- unlist(movRes$mle)[grep("AICc", names(unlist(movRes$mle)))] 
+AICcRes - min(AICcRes) # TLW is the best, followed by LW (which should be considered more or less the same model)
 
 # Compare resuts to simulation values
-cbind(movRes$mle$CCRW[1:5], c(gII,gEE,lI,lE,kE)) # Pretty good
+cbind(movRes$mle$TLW[1:3], c(mu,a,b)) # Pretty good, 
+# except for b, but that's becasue you need a really big sample size to have a chane to have really long step
 
 # Look at test of absolute fit
-# With an alpha of 0.05, not significantly different from CCRW
+# With an alpha of 0.05, not significantly different from LW & TLW
 round(movRes$pseudoRes$PR["pval",],3)
 
 ########################
@@ -27,23 +24,22 @@ movResTA <- movLikelihoods(mov, PRdetails=TRUE, TAc=10)
 movResTA
 
 # To look at the best model compare AICc
-AICcResTA <- unlist(movResTA$mle)[grep("AICc", names(unlist(movResTA$mle)))] # CCRW is still the best
-AICcResTA - min(AICcResTA) # By far
+AICcResTA <- unlist(movResTA$mle)[grep("AICc", names(unlist(movResTA$mle)))]
+AICcResTA - min(AICcResTA) # TLW and LW are stil the best
 
 # The difference with the threshold angle is smaller (likelily in part because the data set is smaller), 
 # but the delta AIC is still huge
 cbind(AICcRes,AICcResTA)
 
 # Compare resuts to simulation values
-cbind(movResTA$mle$CCRW[1:5], c(gII,gEE,lI,lE,kE)) # Not so bad except for kE
-# It's expected that kE would be biased because we are removing all small angles
+cbind(movResTA$mle$TLW[1:3], c(mu,a,b))  # Similar results
+
 
 # Look at test of absolute fit
 # Significantly different from all model with an alpha of 0.05
-# But that's likely driven by the removal of the small truning angle
+# But that's likely driven by the removal of the small turning angle
 round(movResTA$pseudoRes$PR["pval",],3)
 # If we focuss only on the step length
 round(movResTA$pseudoRes$Z["pval",],3)
 # We see that all turning angle (TA) distributions are insufficient (sig. dif.)
-# but the SL distribution of CCRW is not sig. dif
-
+# but the SL distribution of LW & TLW are not sig. dif
