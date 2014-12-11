@@ -1,6 +1,7 @@
 .Rproj.user*
 *.Rproj
 Read-and-delete-me
+.Rbuildignore
 
 # Compiled files
 *.dll
