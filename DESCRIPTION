@@ -1,0 +1,11 @@
+Package: CCRWvsLW
+Type: Package
+Title: Searching strategy movement models
+Version: 1.0
+Date: 2013-04-08
+Author: Marie Auger-Methe
+Maintainer: Marie Auger-Methe <marie.augermethe@gmail.com>
+Description: Simulate and fit searching strategy movement models to telemetry data.
+License: GPL (>= 2)
+Depends: Rcpp (>= 0.10.1), CircStats, circular, adehabitatLT, VGAM, numDeriv, expm
+LinkingTo: Rcpp

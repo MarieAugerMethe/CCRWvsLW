@@ -1,0 +1,9 @@
+.Rproj.user*
+*.Rproj
+Read-and-delete-me
+
+# Compiled files
+*.dll
+*.o
+*.so
+.Rproj.user
