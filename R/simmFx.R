@@ -137,7 +137,7 @@ simmTLW <- function(n, mu, a, b){
 	# dtpareto(stepL, a, b, (mu-1))
 	# ((mu-1)/(a^(1-mu)-b^(1-mu))*stepL^(-mu))
 
-	SL <- rtpareto(n, a, b, (mu-1))
+	SL <- rtruncpareto(n, a, b, (mu-1)) # Used to be rtpareto
 	TA <- runif(n, 0, 2*pi)
 	
   ######################
