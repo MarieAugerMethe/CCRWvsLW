@@ -94,3 +94,176 @@ HMMwi <- function(SL,TA,missL,SLmin,lambda,kapp,gamma,delta,notMisLoc){
   }
   return(w)
 }
+
+# This is the actual EM algorithm but formatted for the confidence interval
+EM_CCRW_HMM_CI <- function(SL,TA_N,x,missL,notMisLoc,parF,maxiter=300,tol=5e-5){
+  n <- length(SL) + sum(missL-1)
+  # Note I have made the maxiter smaller for CI
+  gII <- x[1]
+  gEE <- x[2]
+  lI <- x[3]
+  lE <- x[4]
+  kE <- x[5]
+  dI <- x[6]
+  dE <- 1-x[6]
+  
+  ##
+  # To allow to fix some of the parameters
+  # This is need for the profile likelihood CI
+  if(length(parF)>0){
+    for (i in 1:length(parF)){
+      assign(names(parF[i]),parF[[i]])
+    }
+  }
+  
+  gamma <- matrix(c(gII,1-gEE,1-gII,gEE),nrow=2)
+  lambda <- c(lI,lE)
+  kapp <- kE
+  delta <- c(dI,dE)
+  
+  # To initialise the EM algorithm you need to choose a set of parameters
+  lambda.next <- lambda
+  gamma.next <- gamma
+  delta.next <- delta
+  kappa.next <- kapp
+  
+  
+  # Making a matrix that will store all the log probability of observations for each state
+  lobsProb <- matrix(0,nrow=n,ncol=2)
+  # Function that calculates the log probabilities
+  lop <- function(){
+    # State 1: F
+    # dexp((SL-SLmin)|lambda_F) * dvonmises(TA|mu_F,kappa_F)
+    lobsProb[notMisLoc,1] <-   dexp((SL-SLmin),lambda[1],log=TRUE) + log(dvm(TA_N, 0, 0))
+    # State 2: T
+    # dexp((SL-SLmin)|lambda_T) * dvonmises(TA|mu_T,kappa_T)
+    lobsProb[notMisLoc,2] <-   dexp((SL-SLmin),lambda[2],log=TRUE) + log(dvm(TA_N, 0, kapp))
+    return(lobsProb)
+  }
+  
+  for (iter in 1:maxiter){
+    lprobObs <- lop() # probability of all observations
+    fb <- HMM.lalphabeta(SL,TA_N,missL,SLmin,lambda, kapp, gamma, delta, notMisLoc) # foward and backward prob
+    la <- fb$la
+    lb <- fb$lb
+    # Use alpha to get the likelihood
+    # remember that LT = alpha_T %*%tr(1)
+    # Using c is just to limit underflow
+    c <- max(la[,n])
+    
+    if(is.nan(c)==T){
+      warning(paste("Underflow problem cannot calculate the log likelihood.",
+                    "This is iteration", iter))
+      return(list(lambda=NA, gamma=NA, delta=NA, kapp=NA, mllk=NA))
+    }
+    
+    llk <- c + log(sum(exp(la[,n]-c))) # log(max(alpha_T)) + log(sum(alpha_T/max(alpha_T))) 
+    
+    # Maximum likelihood estimate based on complete data log likelihood (CDLL)
+    for(j in 1:2){
+      for(k in 1:2){
+        
+        # Calculating: sum_{t=2}^T(E(v_{jk}(t)))
+        # which is needed for the mle of gamma (see below)
+        # Expected binary transition value
+        # E(v_jk(t))=a_{t-1}(j)*gamma_{jk}*p_k(x_t)*b_t(k)/L_T
+        
+        gamma.next[j,k] <- gamma[j,k] * # gamma_{jk}
+          sum(exp(
+            la[j,1:(n-1)] +  # la_{1:(T-1)}(j))
+              lprobObs[2:n,k] + # lp_k(2:T)
+              lb[k,2:n] - # lb_k(2:T)
+              llk)) 
+      }
+      # MLE of CDLL for lambda
+      # sum_{t=1}^T(E(u_j(t)) /sum_{t=1}^T(E(u_j(t)*SL_t)
+      # Expected binary state value
+      # E(u_j(t))=a_t(j)*b_t(j)/L_T
+      lambda.next[j] <- sum(
+        exp(la[j,notMisLoc]+lb[j,notMisLoc]-llk) # E(u_j(t))
+      )/
+        sum(exp(la[j,notMisLoc]+lb[j,notMisLoc]-llk)*(SL-SLmin))			
+      
+    }
+    # MLE of CDLL for kappa
+    # I_1(kappa)/I_0(kappa) = sum (E(u_j(t))*cos(x_t))/sum(E(u_j(t)))
+    # Where I_1 and I_0 are the modified bessel functions
+    # To get kappa
+    # 0 = I_1(kappa)/I_0(kappa) - sum (E(u_j(t))*cos(x_t))/sum(E(u_j(t)))
+    # It's is possible that this equation is biased for kappa
+    # Although my simulation sholud verify this potential problem
+    # I can use optimize to get the kappa that minimizethe function above
+    # For foraging behaviour the kappa is assumed to be 0 (uniform distribution)
+    # so only for travelling behaviour So j=2
+    
+    term2 <- sum(exp(la[2,notMisLoc]+lb[2,notMisLoc]-llk)*cos(TA_N))/
+      sum(exp(la[2,notMisLoc]+lb[2,notMisLoc]-llk))
+    toMin <- function(k){
+      abs((besselI(k,1)/besselI(k,0))-term2)
+    }
+    minKappa <- optimize(toMin,c(0.0000001,709)) # if Kappa greater than 709 besselI(k,1) = Inf
+    kappa.next <- minKappa$minimum
+    
+    # gamma_{jk} = sum_{t=2}^T(E(v_{jk}(t)))/sum_{k=1}^m(sum_{t=2}^T(E(v_{jk}(t))))
+    gamma.next <- gamma.next/rowSums(gamma.next) # apply(,1,sum) : sum row
+    
+    # MLE for delta
+    # E(u_j(1))=a_t(1)*b_t(1)/L_T
+    # delta_j = E(u_j(1))/sum_{j=1}^1(E(u_j(1))) = E(u_j(1))
+    delta.next <- exp(la[,1]+lb[,1]-llk)
+    delta.next <- delta.next/sum(delta.next)
+    
+    
+    a11 <- gamma.next[1]
+    a22 <- gamma.next[4]
+    lambda_F <- lambda.next[1]
+    lambda_T <- lambda.next[2]
+    kappa_T <- kappa.next
+    delta_F <- delta.next[1]
+    delta_T <- delta.next[2]
+    
+    ##
+    # To allow to fix some of the parameters
+    # This is need for the profile likelihood CI
+    if(length(parF)>0){
+      for (i in 1:length(parF)){
+        assign(names(parF[i]),parF[[i]])
+      }
+    }
+    
+    gamma.next <- matrix(c(gII,1-gEE,1-gII,gEE),nrow=2)
+    lambda.next <- c(lI,lE)
+    kappa.next <- kE
+    delta.next <- c(dI,dE)
+    
+    crit <- sum(abs(lambda -lambda.next)) + # for convergence
+      sum(abs(gamma -gamma.next)) +
+      sum(abs(delta -delta.next)) +
+      sum(abs(kapp - kappa.next))
+    
+    if(crit <tol){
+      return(list(lambda=lambda, gamma=gamma, delta=delta, kapp=kapp, mllk=-llk))
+    }
+    
+    # store the values to be compare on the next iteration of the loop
+    
+    lambda <- lambda.next
+    gamma <- gamma.next
+    delta <- delta.next
+    kapp <- kappa.next
+    
+    
+    # I think there are problems of unbounded likelihood
+    # See Zucchini and MacDonald (2009) p.10 & 50
+    # My quick fix is to stop when the estimated lambdas are Inf
+    if(length(which(lambda==Inf))>0){
+      warning(paste("Potential unbounded likelihood problem.", 
+                    "Lambda_I = ",  lambda[1],
+                    "Lambda_E = ", signif(lambda[2],4)))
+      return(list(lambda=NA, gamma=NA, delta=NA, kapp=NA, mllk=NA))
+    }
+  }
+  warning(paste("No convergence after", maxiter,"iterations"))
+  return(list(lambda=NA, gamma=NA, delta=NA, kapp=NA, mllk=NA))
+  
+}

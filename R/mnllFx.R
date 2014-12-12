@@ -70,9 +70,9 @@ mnllCCRW <- function(SL, TA, TA_C, missL, notMisLoc, SLmin, tol=5e-5){
 	mnll <- mnll[which.min(mnll[,'mnll']),]
 
 	if (length(mnll)==0){ # In case no minimization was able to get good values
-		mleCCRW <-rep(NA,12)
+		mleCCRW <-rep(NA,13)
 		names(mleCCRW) <- c("gII", "gEE", "lI", "lE", "kE",
-			"dI", "dE", "a", "mnll", "I*","E*", "AIC")
+			"dI", "dE", "a", "mnll", "I*","E*", "AIC", "AICc")
 	}else{
 
 		# For the comparison purposes and for fitting to observed data
