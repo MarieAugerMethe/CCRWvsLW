@@ -2,9 +2,18 @@
 *.Rproj
 Read-and-delete-me
 .Rbuildignore
+.Rproj.user
+
+# Data files
+*.csv
+*.RData
 
 # Compiled files
 *.dll
 *.o
 *.so
-.Rproj.user
+
+# Cluster files
+*.sh
+*_output
+*_errors
