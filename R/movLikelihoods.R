@@ -5,10 +5,6 @@
 
 movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0){
   
-  # CHANGE MAIN CODE SO IT CALCULATES AICc
-  # MAKE SURE THE SIMUALTIONS GIVE 500 steps or 500 locations
-  # Change dist in simm.Fx to something else, because dist is a fx in R
-  
   #######################################
   # This script estimates the parameters and calculates the AIC of multiple movement models:
   # 1. CCRW: combined BW and CRW for which the states are following a Markov process 
@@ -122,6 +118,8 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0){
   # K
   CI[['K']] <- ciK(SL, TA, SLmin, mleCRW)
   
+  #######
+  # Test of absolute fit
 	pseudoRes <- pseudo(SL, TA_C, TA, SLmin, SLmax, missL, notMisLoc, n,
                       mleMov, PRdetails, graph)
   

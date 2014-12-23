@@ -7,7 +7,7 @@
 simmCCRW(n, gII, gEE, lI, lE, kE, a, dI=NULL)
 }
 \arguments{
-  \item{n}{one integer value for the sample size. Note that this sample size represent the number of final step lengths and turning angles wanted. The ltraj object returned will be longer because a minimum of 3 locations are required to calculate a relative turning angle}
+  \item{n}{one integer value for the sample size. Note that this sample size represent the number of final step lengths and turning angles wanted (when TAc = 0). The ltraj object returned will be longer because a minimum of 3 locations are required to calculate a relative turning angle}
   \item{gII}{one numeric value (between 0 and 1) representing the probability of remaining in the intensive search behavior}
   \item{gEE}{one numeric value (between 0 and 1) representing the probability of remaining in the extensive search behavior}
   \item{lI}{one numeric and positive value representing the lambda value for the exponential distribution of the step lengths of the intensive search}
