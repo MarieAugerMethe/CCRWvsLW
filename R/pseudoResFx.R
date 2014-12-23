@@ -76,7 +76,7 @@ pseudo.u.test <- function(U, nP, n, graph, movMes){
   
   if(graph==TRUE){
     par(mfrow=c(1,2))
-    hist(U, nB, xlab = "Uniform pseudo-residuals", ylab=paste("Frequency of",movMes), main="")
+    hist(U, nB, xlab = "Uniform pseudo-residuals", ylab=paste("Frequency",movMes), main="")
     box()
     acf(U, xlab="Lag (steps)", ylab=paste("ACF",movMes), main="")
   }
