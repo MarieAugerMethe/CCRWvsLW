@@ -41,7 +41,7 @@ pseudo.u.test <- function(U, nP, n, graph, movMes){
   # we need a minium of 5 bins with 10 expected
   # so a minimum of 50 data points.
   
-  # Not constant size bin
+  # Constant size bin
   nB <- floor(n/10)
   U_E <- n/nB
   U_B <- seq(0,1,length.out=(nB+1))
@@ -130,7 +130,7 @@ ptexp <- function(SL,SLmin,SLmax,parTE){
 
 # function that test the absolut fit
 
-pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,graph){
+pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,graph,Uinfo=FALSE){
   
 	##########################################################
 	# Pseudo residuals
@@ -209,7 +209,7 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
 	# TE
 	# For both TBW and TCRW
 
-	uTE <- ptexp(SL,SLmin,SLmax,mleMov$TBW[1])
+	U_TE <- ptexp(SL,SLmin,SLmax,mleMov$TBW[1])
 
 
 	#####
@@ -245,7 +245,7 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
   # nP = SLmin + lambda
 	Z[,4] <- pseudo.u.test(U_E,2,n,graph[4]|graph[5],"SL")
   # nP = SLmin + lambda + SLmax
-	Z[,5] <- pseudo.u.test(uTE,3,n,graph[6]|graph[7],"SL")
+	Z[,5] <- pseudo.u.test(U_TE,3,n,graph[6]|graph[7],"SL")
 
 	######################
 	# TA
@@ -266,8 +266,16 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
 	PR[,6] <- combP(Z[2,5],Z[2,7]) # TBW
 	PR[,7] <- combP(Z[2,5],Z[2,8]) # TCRW
 
-  if(PRdetails){
+  if(PRdetails & Uinfo){
+    return(list('PR'=PR,'Z'=Z, 
+                'U'= cbind(U_SL_CCRW, U_LW, U_TLW, U_E, U_TE,
+                           U_TA_CCRW, U_U, U_VM)))
+  }else if(PRdetails){
     return(list('PR'=PR,'Z'=Z))
+  }else if(Uinfo){
+    return(list('PR'=PR, 
+                'U'= cbind(U_SL_CCRW, U_LW, U_TLW, U_E, U_TE,
+                           U_TA_CCRW, U_U, U_VM)))
   }else{
     return(PR) 
   }
