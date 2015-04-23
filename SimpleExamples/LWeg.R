@@ -3,7 +3,6 @@ mu <- 2
 a <- 1 
 
 mov <- simmLW(500,mu,a)
-plot(mov)
 movRes <- movLikelihoods(mov, PRdetails=TRUE)
 # You'll most likeliy have warnings, 
 # becasue the HMM will have a hard time fitting a model with extremely long step length
@@ -13,9 +12,28 @@ movRes <- movLikelihoods(mov, PRdetails=TRUE)
 AICcRes <- unlist(movRes$mle)[grep("AICc", names(unlist(movRes$mle)))] 
 AICcRes - min(AICcRes) # LW & TLW are the bests
 
+###
 # Compare resuts to simulation values
-cbind(movRes$mle$TLW[1:2], c(mu,a)) # Pretty good, 
+cbind(movRes$mle$LW[1:2], c(mu,a)) # Pretty good, 
 
+###
+# Look at confidence intervals, the "true"/simulated value don't always fall in the 95%CI
+cbind(simVal=mu, movRes$CI$LW,
+      inInt = movRes$CI$LW[,2] <= mu & movRes$CI$LW[,3] >= mu)
+
+# Look at the profile likelihood CI over the range from the quad approximation
+par(mar=c(4,4,0.5,0.5), mgp=c(2.5,0.8,0))
+ciPL <- ciLWpl(mov, movRes$mle$LW, rangePar=movRes$CI$LW[,2:3])
+# You'll get warnings if the range values are outside the possible range for the parameter
+ciPL
+# Clearly the quad approximation are not perfect estimates the CI interval
+rangeB <- cbind(movRes$CI$LW[,2]*0.95,movRes$CI$LW[,3]*1.05)
+ciPL <- ciLWpl(mov, movRes$mle$LW, rangePar=rangeB)
+cbind(simVal=mu, ciPL,
+      inInt = ciPL[,2] <= mu & ciPL[,3] >= mu)
+# Still simulated value not always in CI
+
+###
 # Look at test of absolute fit
 # With an alpha of 0.05, not significantly different from LW and TLW
 round(movRes$pseudoRes$PR["pval",],3)

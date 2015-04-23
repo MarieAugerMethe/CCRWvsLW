@@ -6,7 +6,6 @@ lE <- 0.001
 kE <- 10
 a <- 1 
 mov <- simmCCRW(500,gII,gEE,lI,lE,kE,a,0.5)
-plot(mov)
 movRes <- movLikelihoods(mov, PRdetails=TRUE)
 movRes
 
@@ -14,8 +13,24 @@ movRes
 AICcRes<- unlist(movRes$mle)[grep("AICc", names(unlist(movRes$mle)))] # CCRW is the best
 AICcRes - min(AICcRes) # By far
 
-# Compare resuts to simulation values
-cbind(movRes$mle$CCRW[1:5], c(gII,gEE,lI,lE,kE)) # Pretty good
+# Compare parameter estimates to simulation values
+cbind(simVal=c(gII,gEE,lI,lE,kE), parEst=movRes$mle$CCRW[1:5]) # Pretty good
+
+# Look at confidence intervals, the "true"/simulated value don't always fall in the 95%CI
+cbind(simVal=c(gII,gEE,lI,lE,kE), movRes$CI$CCRW,
+      inInt = movRes$CI$CCRW[,2]<=c(gII,gEE,lI,lE,kE) & movRes$CI$CCRW[,3]>=c(gII,gEE,lI,lE,kE))
+
+# Look at the profile likelihood CI over the range from the quad approximation
+par(mar=c(4,4,0.5,0.5), mgp=c(2.5,0.8,0))
+ciPL <- ciCCRWpl(mov, movRes$mle$CCRW, rangePar=movRes$CI$CCRW[,2:3])
+# You'll get warnings if the range values are outside the possible range for the parameter
+ciPL
+# Clearly the quad approximation are underestimating the CI interval
+rangeB <- cbind(movRes$CI$CCRW[,2]*0.95,movRes$CI$CCRW[,3]*1.05)
+ciPL <- ciCCRWpl(mov, movRes$mle$CCRW, rangePar=rangeB)
+cbind(simVal=c(gII,gEE,lI,lE,kE), ciPL,
+      inInt = ciPL[,2]<=c(gII,gEE,lI,lE,kE) & ciPL[,3]>=c(gII,gEE,lI,lE,kE))
+# Now simulated value is in the CI
 
 # Look at test of absolute fit
 # With an alpha of 0.05, not significantly different from CCRW

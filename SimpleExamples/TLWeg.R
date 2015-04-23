@@ -14,6 +14,20 @@ AICcRes - min(AICcRes) # TLW is the best, followed by LW (which should be consid
 cbind(movRes$mle$TLW[1:3], c(mu,a,b)) # Pretty good, 
 # except for b, but that's becasue you need a really big sample size to have a chane to have really long step
 
+###
+# Look at the profile likelihood CI over the range from the quad approximation
+par(mar=c(4,4,0.5,0.5), mgp=c(2.5,0.8,0))
+ciPL <- ciTLWpl(mov, movRes$mle$TLW, rangePar=movRes$CI$TLW[,2:3])
+# You'll get warnings if the range values are outside the possible range for the parameter
+ciPL
+# Clearly the quad approximation are not perfect estimates the CI interval
+rangeB <- cbind(movRes$CI$TLW[,2]*0.95,movRes$CI$TLW[,3]*1.05)
+ciPL <- ciTLWpl(mov, movRes$mle$TLW, rangePar=rangeB)
+cbind(simVal=mu, ciPL,
+      inInt = ciPL[,2] <= mu & ciPL[,3] >= mu)
+# Still simulated value not always in CI
+
+###
 # Look at test of absolute fit
 # With an alpha of 0.05, not significantly different from LW & TLW
 round(movRes$pseudoRes$PR["pval",],3)
