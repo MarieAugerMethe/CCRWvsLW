@@ -1,3 +1,5 @@
+# Simple TLW example
+
 library(CCRWvsLW)
 mu <- 2
 a <- 1 
@@ -11,8 +13,10 @@ AICcRes <- unlist(movRes$mle)[grep("AICc", names(unlist(movRes$mle)))]
 AICcRes - min(AICcRes) # TLW is the best, followed by LW (which should be considered more or less the same model)
 
 # Compare resuts to simulation values
-cbind(movRes$mle$TLW[1:3], c(mu,a,b)) # Pretty good, 
-# except for b, but that's becasue you need a really big sample size to have a chane to have really long step
+cbind(movRes$mle$TLW[1:3], c(mu,a,b)) 
+# Pretty good, 
+# except for b, 
+# but that's because you need a really big sample size to have a chane to have really long step
 
 ###
 # Look at the profile likelihood CI over the range from the quad approximation
@@ -41,13 +45,8 @@ movResTA
 AICcResTA <- unlist(movResTA$mle)[grep("AICc", names(unlist(movResTA$mle)))]
 AICcResTA - min(AICcResTA) # TLW and LW are stil the best
 
-# The difference with the threshold angle is smaller (likelily in part because the data set is smaller), 
-# but the delta AIC is still huge
-cbind(AICcRes,AICcResTA)
-
 # Compare resuts to simulation values
 cbind(movResTA$mle$TLW[1:3], c(mu,a,b))  # Similar results
-
 
 # Look at test of absolute fit
 # Significantly different from all model with an alpha of 0.05

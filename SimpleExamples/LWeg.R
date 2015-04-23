@@ -1,3 +1,5 @@
+# Simple pure Levy walk example
+
 library(CCRWvsLW)
 mu <- 2
 a <- 1 
@@ -5,7 +7,7 @@ a <- 1
 mov <- simmLW(500,mu,a)
 movRes <- movLikelihoods(mov, PRdetails=TRUE)
 # You'll most likeliy have warnings, 
-# becasue the HMM will have a hard time fitting a model with extremely long step length
+# because the HMM will have a hard time fitting a model with extremely long step length
 # In this case it make, sense since the CCRW/HMM is not a good model for this LW dataset
 
 # To look at the best model compare AICc
@@ -50,12 +52,7 @@ AICcResTA - min(AICcResTA) # TLW and LW are stil the best
 # Compare resuts to simulation values
 cbind(movResTA$mle$LW[1:2], c(mu,a))  # Similar results
 
-
 # Look at test of absolute fit
-# Significantly different from all model with an alpha of 0.05
-# But that's likely driven by the removal of the small truning angle
 round(movResTA$pseudoRes$PR["pval",],3)
 # If we focuss only on the step length
 round(movResTA$pseudoRes$Z["pval",],3)
-# We see that all turning angle (TA) distributions are insufficient (sig. dif.)
-# but the SL distribution ofLW & TLW are not sig. dif

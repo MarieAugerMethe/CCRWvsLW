@@ -1,3 +1,5 @@
+# Example of simulating and fitting a CCRW
+
 library(CCRWvsLW)
 gII <- 0.9
 gEE <- 0.9
@@ -61,4 +63,3 @@ round(movResTA$pseudoRes$PR["pval",],3)
 round(movResTA$pseudoRes$Z["pval",],3)
 # We see that all turning angle (TA) distributions are insufficient (sig. dif.)
 # but the SL distribution of CCRW is not sig. dif
-
