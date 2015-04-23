@@ -17,3 +17,8 @@ Read-and-delete-me
 *.sh
 *_output
 *_errors
+
+# Folders with files for running loop on server and results
+*/ClusterRes/*
+*/ClusterFiles/*
+

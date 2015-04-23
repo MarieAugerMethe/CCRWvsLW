@@ -2,7 +2,7 @@ Package: CCRWvsLW
 Type: Package
 Title: Searching strategy movement models
 Version: 1.0
-Date: 2013-04-08
+Date: 2015-01-23
 Author: Marie Auger-Methe
 Maintainer: Marie Auger-Methe <marie.augermethe@gmail.com>
 Description: Simulate and fit searching strategy movement models to telemetry data.
