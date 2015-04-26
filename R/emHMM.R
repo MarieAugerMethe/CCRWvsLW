@@ -191,8 +191,8 @@ EM_CCRW_HMM_CI <- function(SL,TA_N,x,missL,notMisLoc,parF,maxiter=300,tol=5e-5){
     # To get kappa
     # 0 = I_1(kappa)/I_0(kappa) - sum (E(u_j(t))*cos(x_t))/sum(E(u_j(t)))
     # It's is possible that this equation is biased for kappa
-    # Although my simulation sholud verify this potential problem
-    # I can use optimize to get the kappa that minimizethe function above
+    # Although my simulation should verify this potential problem
+    # I can use optimize to get the kappa that minimize the function above
     # For foraging behaviour the kappa is assumed to be 0 (uniform distribution)
     # so only for travelling behaviour So j=2
     

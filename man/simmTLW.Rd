@@ -1,7 +1,7 @@
 \name{simmTLW}
 \alias{simmTLW}
 \title{Simulate a truncated Levy Walk (TLW)}
-\description{Simulate a truncated Levy Walk (TLW). This model represent the movement of the Levy search strategy.}
+\description{Simulate a truncated Levy Walk (TLW). This model represents the movement of the Levy search strategy.}
 \usage{
 simmTLW(n, mu, a, b)
 }
@@ -11,7 +11,8 @@ simmTLW(n, mu, a, b)
   \item{a}{one numeric and positive value representing the minimum step length value}
   \item{b}{one numeric and positive value representing the maximum step length value, i.e., the truncation point}
 }
-\details{Maybe talk about Null model}
-\value{SAY WHAT IT RETUNS (ltraj object!)}
-\references{MY PAPER}
+\details{Simulates a TLW and return a ltraj object}
+\references{
+Please refer to Auger-Methe, M., A.E. Derocher, M.J. Plank, E.A. Codling, M.A. Lewis (2015) Differentiating the Levy walk from a composite correlated random walk. arXiv:1406.4355 found at \url{http://arxiv.org/abs/1406.4355}
+}
 \seealso{\code{\link{simmLW}}}

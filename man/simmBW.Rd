@@ -10,6 +10,7 @@ simmBW(n, l, a)
   \item{l}{one numeric and positive value representing the lambda value for the exponential distribution of the step lengths}
   \item{a}{one numeric and positive value representing the minimum step length value}
 }
-\details{Maybe talk about Null model}
-\value{SAY WHAT IT RETUNS (ltraj object!)}
-\references{MY PAPER}
+\details{Simulates a BW and return a ltraj object}
+\references{
+Please refer to Auger-Methe, M., A.E. Derocher, M.J. Plank, E.A. Codling, M.A. Lewis (2015) Differentiating the Levy walk from a composite correlated random walk. arXiv:1406.4355 found at \url{http://arxiv.org/abs/1406.4355}
+}

@@ -1,7 +1,7 @@
 \name{mnllCCRW}
 \alias{mnllCCRW}
 \title{Maximum likelihood estimation of the CCRW}
-\description{Minimise the negative log-likelihood for the CCRW though the EM-algorithm.
+\description{Minimize the negative log-likelihood for the CCRW though the EM-algorithm.
 }
 \usage{
 mnllCCRW(SL, TA, TA_C, missL, notMisLoc, SLmin, tol=5e-5)
@@ -15,5 +15,11 @@ mnllCCRW(SL, TA, TA_C, missL, notMisLoc, SLmin, tol=5e-5)
   \item{SLmin}{one numeric value representing the minimum step length}
   \item{tol}{double: value that indicates the maximum allowed difference between the parameters, default 5e-5}
 }
-\details{This function use the function emHMM to minimize the negative log-likelihood. Note that this rquire setting starting paramater values. To limit the chances to that the estimates is the results of a local peak in the likelihood, the function mnllCCRW applies the EM-algorithm function emHMM to set of different starting values combinations and choose the overall lowest negative log-likelihood estimate. To explore further starting parameter values use directly emHMM function.}
+\details{This function uses the function emHMM to minimize the negative log-likelihood. Note that emHMM requires setting starting parameter values. To decrease the chances of having results associated with a local peak in the likelihood, the function mnllCCRW applies the EM-algorithm function emHMM to set of different starting values combinations and choose the overall lowest negative log-likelihood estimate. To explore the effect of starting values, use directly emHMM function.}
 \seealso{\code{\link{emHMM}}}
+\examples{
+simPath <- simmCCRW(500,0.9,0.9,0.1,0.01,5,1)
+formPath <- movFormat(simPath)
+mnllCCRW(formPath$SL, formPath$TA, formPath$TA_C, 
+      formPath$missL, formPath$notMisLoc, formPath$SLmin)
+}

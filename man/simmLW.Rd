@@ -10,7 +10,8 @@ simmLW(n, mu, a)
   \item{mu}{one numeric (1<mu<=3) representing the mu value for the Pareto distribution of the step lengths}
   \item{a}{one numeric and positive value representing the minimum step length value}
 }
-\details{Maybe talk about Null model}
-\value{SAY WHAT IT RETUNS (ltraj object!)}
-\references{MY PAPER}
+\details{Simulates a LW and return a ltraj object}
+\references{
+Please refer to Auger-Methe, M., A.E. Derocher, M.J. Plank, E.A. Codling, M.A. Lewis (2015) Differentiating the Levy walk from a composite correlated random walk. arXiv:1406.4355 found at \url{http://arxiv.org/abs/1406.4355}
+}
 \seealso{\code{\link{simmTLW}}}

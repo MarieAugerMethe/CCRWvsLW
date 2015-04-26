@@ -323,7 +323,7 @@ nllTBW <- function(SL,TA,x,parF=list('SLmin'=SLmin,'SLmax'=SLmax)){
 
 #######################################
 # TCRW
-nllTCRW <- function(SL,TA,lambda,kapp,SLmin=min(SL),SLmax=min(SL)){
+nllTCRW <- function(SL,TA,lambda,kapp,SLmin=min(SL),SLmax=max(SL)){
 	##
 	# Parameters to estimate:
 	# lambda, kapp

@@ -20,7 +20,7 @@ movFormat <- function(movltraj, TAc=0){
 	# I recommend setting the appropriate time difference before using the movLikelihoods() function
 	# and not use the first dt but rather use the dt that you know you want to use
 	# e.g.: The grizzly bear collars are set to get location every 4hrs and they start
-	# at 00:00 and I hvae use that information to setNA
+	# at 00:00 and I have use that information to setNA
 #	movltraj <- setNA(movltraj,date.ref=movltraj[[1]]$date[1],dt=min(movltraj[[1]]$dt, na.rm=TRUE))
 
 	# Because it is impossible to get a relative turning angle for the "steps" for which

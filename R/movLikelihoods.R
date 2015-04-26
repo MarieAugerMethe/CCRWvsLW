@@ -49,8 +49,6 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0){
   # 3. To limit the parameter to values that are sensical 
   #    I have transformed the parameters (either by exponentiated or logit transform )
   
-  #######################################
-  # All the packages and functions required are loaded with sourcingFx.R
   
   #######################################
   # Formating movement trajectory

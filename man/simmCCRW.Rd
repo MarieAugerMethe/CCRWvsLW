@@ -2,7 +2,7 @@
 \alias{simmCCRW}
 \alias{sslta}
 \title{Simulate a Combined Correlated Random Walk (CCRW)}
-\description{Simulate a Combined Correlated Random Walk (CCRW). This model represent the movement of the area-restricted search strategy. The movement of the intensive search behavior is a Brownian walk while the movement of the the extensive search is a correlate random walk.}
+\description{Simulate a Combined Correlated Random Walk (CCRW). This model represents the movement of the area-restricted search strategy. The movement of the intensive search behavior is a Brownian walk while the movement of the the extensive search is a correlate random walk.}
 \usage{
 simmCCRW(n, gII, gEE, lI, lE, kE, a, dI=NULL)
 }
@@ -16,6 +16,7 @@ simmCCRW(n, gII, gEE, lI, lE, kE, a, dI=NULL)
   \item{a}{one numeric and positive value representing the minimum step length value}
   \item{dI}{one numeric value (between 0 and 1) representing the probability of starting in the intensive search behavior, default value is NULL, in which case the stationary distribution of the Markov Chain is used to calculate the dI value}
 }
-\details{MAYBE TALK ABOUT cpp function}
-\value{SAY WHAT IT RETUNS (ltra object!)}
-\references{ADD CITATION TO ZUC AND MAC AND MY PAPER}
+\details{Simulates a CCRW and return a ltraj object}
+\references{
+Please refer to Auger-Methe, M., A.E. Derocher, M.J. Plank, E.A. Codling, M.A. Lewis (2015) Differentiating the Levy walk from a composite correlated random walk. arXiv:1406.4355 found at \url{http://arxiv.org/abs/1406.4355}
+}
