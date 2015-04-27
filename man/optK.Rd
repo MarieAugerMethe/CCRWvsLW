@@ -2,10 +2,10 @@
 \alias{optK}
 \docType{package}
 \title{
-Minimizing numerically the MLE to estimate kappa.
+Function used in the EM algorithm to estimate kappa numerically
 }
 \description{
-Even with the CDLL the kappa value cannot be minimized analytically. This function minimize the part that needs to be minimized numerically. 
+Even with the CDLL, the kappa value cannot found analytically. This function minimizes the part that needs to be minimized numerically. 
 }
 \usage{
 optK(t2)	
