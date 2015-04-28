@@ -24,7 +24,7 @@ nllTCRW(SL, TA, lambda, kapp, SLmin=min(SL), SLmax=max(SL))
 
 The nllTCRW function evaluate the negative log likelihood value.}
 \references{
-Please refer to Auger-Methe, M., A.E. Derocher, M.J. Plank, E.A. Codling, M.A. Lewis (2015) Differentiating the Levy walk from a composite correlated random walk. arXiv:1406.4355 found at \url{http://arxiv.org/abs/1406.4355}
+Please refer to Auger-Methe, M., A.E. Derocher, M.J. Plank, E.A. Codling, M.A. Lewis (2015-In Press) Differentiating the Levy walk from a composite correlated random walk. Methods in Ecology and Evolution. Preprint available at \url{http://arxiv.org/abs/1406.4355}
 }
 \examples{
 simPath <- simmCRW(500,0.1,5,1)

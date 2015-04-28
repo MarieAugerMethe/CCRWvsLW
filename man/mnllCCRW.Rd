@@ -17,6 +17,9 @@ mnllCCRW(SL, TA, TA_C, missL, notMisLoc, SLmin, tol=5e-5)
 }
 \details{This function uses the function emHMM to minimize the negative log-likelihood. Note that emHMM requires setting starting parameter values. To decrease the chances of having results associated with a local peak in the likelihood, the function mnllCCRW applies the EM-algorithm function emHMM to set of different starting values combinations and choose the overall lowest negative log-likelihood estimate. To explore the effect of starting values, use directly emHMM function.}
 \seealso{\code{\link{emHMM}}}
+\references{
+Please refer to Auger-Methe, M., A.E. Derocher, M.J. Plank, E.A. Codling, M.A. Lewis (2015-In Press) Differentiating the Levy walk from a composite correlated random walk. Methods in Ecology and Evolution. Preprint available at \url{http://arxiv.org/abs/1406.4355}
+}
 \examples{
 simPath <- simmCCRW(500,0.9,0.9,0.1,0.01,5,1)
 formPath <- movFormat(simPath)

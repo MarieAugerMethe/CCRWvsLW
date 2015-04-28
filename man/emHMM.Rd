@@ -24,7 +24,8 @@ kapp, notMisLoc, maxiter=10000, tol=1e-5)
   \item{tol}{double: value that indicates the maximum allowed difference between the parameters.}
   }
 \details{Will return the parameter estimates and the minimum negative log likelihood.}
-\references{For more information on the CCRW fitted please refer to Please refer to Auger-Methe, M., A.E. Derocher, M.J. Plank, E.A. Codling, M.A. Lewis (2015) Differentiating the Levy walk from a composite correlated random walk. arXiv:1406.4355 found at \url{http://arxiv.org/abs/1406.4355}.
+\references{
+Please refer to Auger-Methe, M., A.E. Derocher, M.J. Plank, E.A. Codling, M.A. Lewis (2015-In Press) Differentiating the Levy walk from a composite correlated random walk. Methods in Ecology and Evolution. Preprint available at \url{http://arxiv.org/abs/1406.4355}
 
 For more information on the EM-algorithm please refer to Zucchini W. and I.L. MacDonald (2009) Hidden Markov Models for Time Series: An Introduction Using R. Chapman and Hall/CRC}
 \examples{
