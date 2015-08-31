@@ -239,8 +239,14 @@ nllTLW <- function(SL,TA,mu,parF=list(SLmin=min(SL),SLmax=max(SL))){
 	# Uniform turning angle distribution: mu=0, kappa=0
 
 	# from Edwards et al 2007 (supp): likelihood = (mu - 1) / (a^(1-mu) - b^(1-mu))^(-1) * SL^(-mu)
-	# Note that I don't have the form for when mu=1 and so it will crash!
-	LL <- log((mu-1)/(SLmin^(1-mu) - SLmax^(1-mu))) - mu*log(SL) + log(dvm(TA, 0, 0))
+  # Unlike for the pure LW, the TLW can have mu <= 1, 
+  # The likelihood for mu =1 is different than that for mu != 1, see Edwards et al. 2012
+  # if mu = 1 
+  if(mu == 1){
+    LL <- log(1/(log(SLmax) - log(SLmin))) - mu*log(SL) + log(dvm(TA, 0, 0)) 
+  }else{
+    LL <- log((mu-1)/(SLmin^(1-mu) - SLmax^(1-mu))) - mu*log(SL) + log(dvm(TA, 0, 0)) 
+  }
 	return(-sum(LL))
 }
 

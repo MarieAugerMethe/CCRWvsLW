@@ -129,14 +129,20 @@ mnllLW <- function(SL, TA, SLmin=min(SL)){
 ################################
 # TLW
 
-mnllTLW <- function(SL,TA,SLmin=min(SL),SLmax=max(SL)){
+mnllTLW <- function(SL,TA,SLmin=min(SL),SLmax=max(SL), conts=TRUE){
 	# The data does not give you information on the upper bound of 
 	# the LW other than the minimum value this upper bound is 
 	# which correspound to the largest step length.
 	# Note that there is no analytical solution for the mle of TLW
 	# and that mu can =1 see Edwards 2011 supp. (But I need to change the likelihood for it)
 
-	mnll <- optimize(nllTLW, interval=c(1,3),SL=SL,TA=TA,parF=list('SLmin'=SLmin,'SLmax'=SLmax))
+  # If contsraining the values to be between 1 & 3, 
+  # which are the values consistent with the levy walk hypothesis.
+	if(conts){ 
+	  mnll <- optimize(nllTLW, interval=c(1,3),SL=SL,TA=TA,parF=list('SLmin'=SLmin,'SLmax'=SLmax))  
+	}else{
+	  mnll <- optimize(nllTLW, interval=c(-50,50), SL=SL,TA=TA,parF=list('SLmin'=SLmin,'SLmax'=SLmax)) 
+	}
  
 	# According to Burnham and Anderson (2002)
 	# AIC = 2*nll +2*k

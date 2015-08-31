@@ -10,7 +10,7 @@
 # to calculate the PL CIs for all the parameters estimated through mle
 
 #######################################
-CI.PL.EM <- function(SL,TA, parI, parMLE, missL, parF, rang.b, mnll.m, notMisLoc, B=100,graph=T){
+CI.PL.EM <- function(SL, TA, parI, parMLE, missL, parF, rang.b, mnll.m, notMisLoc, B=100,graph=T){
   
   #######################################
   # This function calculates the 95% confidence interval

@@ -3,7 +3,7 @@
 # Date created: March 28, 2011
 # Updated: April 3, 2013
 
-movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0){
+movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=TRUE){
   
   #######################################
   # This script estimates the parameters and calculates the AIC of multiple movement models:
@@ -70,7 +70,7 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0){
   
   mleLW <- mnllLW(SL, TA, SLmin)
   
-  mleTLW <- mnllTLW(SL, TA, SLmin, SLmax)
+  mleTLW <- mnllTLW(SL, TA, SLmin, SLmax, conts)
   
   mleBW <- mnllBW(SL, TA, SLmin)
   
