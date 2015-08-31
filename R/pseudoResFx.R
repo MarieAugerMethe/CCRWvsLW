@@ -116,6 +116,20 @@ ptexp <- function(SL,SLmin,SLmax,parTE){
          function(x) integrate(dtexp,SLmin,x,SLmin=SLmin,SLmax=SLmax,parTE=parTE)[[1]])
 }
 
+# Probability density function of truncated pareto
+dtpar <- function(SL, SLmin, SLmax, mu){
+  if(mu == 1){
+    pp <- (1/(log(SLmax) - log(SLmin)))*SL^{-mu}
+  }else{
+    pp <- ((mu-1)/(SLmin^(1-mu) - SLmax^(1-mu)))*SL^{-mu}
+  }
+  return(pp)
+}
+
+ptpar <- function(SL,SLmin,SLmax,mu){
+  sapply(SL,
+         function(x) integrate(dtpar,SLmin,x,SLmin=SLmin,SLmax=SLmax,mu=mu)[[1]])
+}
 
 
 ##
@@ -197,7 +211,7 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
 	##
 	# TLW
 
-	U_TLW <- ptruncpareto(SL,SLmin,SLmax,mleMov$TLW[1]-1) # Used to be ptpareto
+	U_TLW <- ptpar(SL,SLmin,SLmax,mleMov$TLW[1]) # Used to be ptpareto
 
 	##
 	# E
