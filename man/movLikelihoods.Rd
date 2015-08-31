@@ -12,7 +12,7 @@ movLikelihoods(movltraj, graph = TRUE, PRdetails = FALSE, TAc = 0)
   \item{PRdetails}{one logical value that states whether the details of the pseudoresiduals should be returned}
   \item{TAc}{one numeric value for the threshold angle used in the local turn method}
 }
-\details{movLikelihoods fits a CCRW, TLW, LW, BW, CRW, TBW, TCRW to a movement path.}
+\details{movLikelihoods fits a CCRW, TLW, LW, BW, CRW, TBW, TCRW to a movement path. Note that the test of absolute fit for the TLW will not work if the estimate mu is smaller or equal to 1.}
 \references{
 Please refer to Auger-Methe, M., A.E. Derocher, M.J. Plank, E.A. Codling, M.A. Lewis (2015-In Press) Differentiating the Levy walk from a composite correlated random walk. Methods in Ecology and Evolution. Preprint available at \url{http://arxiv.org/abs/1406.4355}
 }

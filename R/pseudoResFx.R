@@ -208,7 +208,6 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
 	##
 	# TE
 	# For both TBW and TCRW
-
 	U_TE <- ptexp(SL,SLmin,SLmax,mleMov$TBW[1])
 
 
