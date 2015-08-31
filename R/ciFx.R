@@ -23,7 +23,7 @@ CI.Hessian <- function(SL,TA, parMLE, trans.par, M, parF, NLL){
 	# Get a numerial estimate of the Hessian from the optimisation routine
 	# but this is for the working parameter
 	# the nlm often crashes for CCRW so can't use it for hessian
-	H <- hessian(NLL, trans.par(parMLE),SL=SL,TA=TA,parF=parF)
+	H <- hessian(NLL, trans.par(parMLE), SL=SL,TA=TA,parF=parF)
 
 	# Transform for real parameter
 	# From Zucch & MacD 2009
@@ -63,7 +63,7 @@ CI.Hessian <- function(SL,TA, parMLE, trans.par, M, parF, NLL){
 
 
 #######################################
-# CCRW
+# CCRW - for EM-algorithm
 
 ciCCRW <- function(SL,TA,SLmin,missL,notMisLoc,mleM){
   # Table for the CI
@@ -104,6 +104,44 @@ ciCCRW <- function(SL,TA,SLmin,missL,notMisLoc,mleM){
 	}
   
 	return(CI)
+}
+
+#######################################
+# CCRW - direct numerical minimization
+
+ciCCRWdn <- function(SL,TA,SLmin,missL,mleM){
+  # Table for the CI
+  CI <- matrix(NA, nrow=5, ncol=3)
+  rownames(CI) <- names(mleM[1:5])
+  colnames(CI) <- c("estimate","L95CI", "U95CI")
+  
+  # Parameter estimates
+  CI[,1] <- mleM[1:5]
+  
+  parF <- list('SLmin'=SLmin,"missL"=missL)
+  trans.par <- function(x){
+    x[1] <- qlogis(x[1])
+    x[2] <- qlogis(x[2])
+    x[3] <- log(x[3] - .Machine$double.xmin)
+    x[4] <- log(x[4] - .Machine$double.xmin)
+    x[5] <- log(x[5])
+    return(x)
+  }
+  
+  # According to Zucchini and MacDonald (2009)
+  M <- diag(c(
+    CI[1,1]*(1-CI[1,1]),
+    CI[2,1]*(1-CI[2,1]),
+    CI[3,1], CI[4,1], CI[5,1]))
+  
+  if(any(is.na(mleM[1:7]))){
+    warning("The optim return NA values for the parameters, so no CI calculated")
+  }else{
+    CI[,2:3] <- CI.Hessian(SL,TA, CI[,1], trans.par, M,
+                           parF=parF, nllCCRWdn)
+  }
+  
+  return(CI)
 }
 
 

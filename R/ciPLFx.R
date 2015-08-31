@@ -10,7 +10,7 @@
 # to calculate the PL CIs for all the parameters estimated through mle
 
 #######################################
-CI.PL.EM <- function(SL, TA, parI, parMLE, missL, parF, rang.b, mnll.m, notMisLoc, B=100,graph=T){
+CI.PL.EM <- function(SL, TA, parI, parMLE, missL, parF, rang.b, mnll.m, notMisLoc, B=100, graph=TRUE){
   
   #######################################
   # This function calculates the 95% confidence interval
@@ -112,6 +112,82 @@ CI.PL.EM <- function(SL, TA, parI, parMLE, missL, parF, rang.b, mnll.m, notMisLo
   return(res)
 }
 
+#######################################
+CI.PL <- function(SL, TA, parI, parMLE, trans.par, NLL, parF, rang.b, mnll.m, B=100,graph=T){
+  
+  # Function inputs
+  # SL: step length
+  # TA: relative turn angle
+  # parI: parameter of interest (for which the CI is computed with this fx) (not transformed)
+  # parMLE.t: MLE values for all the parameters that are estimated through MLE (already transformed)
+  # NLL: neg LL function for the model (one of the fx in nll.fx.R)
+  # B: number of values of parI for which the min neg LL is estimated
+  # rang.b: range boundaries for parI
+  # mnll.m: min neg LL of the model when all parameters are minimised
+
+  mnll_i <- floor(B/2)
+  rang.parI <- numeric(B)
+  rang.parI[1:mnll_i] <- seq(rang.b[1],parI,length=mnll_i)
+  rang.parI[mnll_i:B] <- seq(parI,rang.b[2],length=(B-mnll_i+1))
+  names(rang.parI) <- rep(names(parI),B)
+  
+  # Set memory for loop results
+  rang.mnll <- numeric(B)
+  mnllRes <- vector("list", length=5)
+  
+  for (i in 1:B){
+    mnllRes <- optim(trans.par(parMLE),NLL,SL=SL,TA=TA, parF=c(parF,rang.parI[i]))
+    rang.mnll[i] <- mnllRes$value
+    mnllRes$message
+  }
+  
+  # Step 2. Divide into two branch (Lower and upper)
+  # Since we divided around the mle we can use the index from above
+  prof.lower <- rang.mnll[1:mnll_i]
+  prof.l.avec <- rang.parI[1:mnll_i]
+  
+  prof.upper <- rang.mnll[mnll_i:B]
+  prof.u.avec <- rang.parI[mnll_i:B]
+  
+  # Step 3. Using linear interpolation to get the value of X for which
+  # neg LL (for the parameter range) =
+  # neg LL (from the real MLE) + chisqdist(0.95)/2
+  
+  thr_95 <- mnll.m + qchisq(0.95,1)/2
+  
+  # So we get to good peak
+  if(any(prof.lower > thr_95, na.rm=TRUE)){
+    im <- max(which(prof.lower > thr_95))
+    if(im >1){
+      prof.lower[1:(im-1)] <- NA 
+    }
+  }
+  if(any(prof.upper > thr_95, na.rm=TRUE)){
+    # So we get to good peak
+    im <- min(which(prof.upper > thr_95))
+    if(im < length(prof.upper)){
+      prof.upper[(im+1):length(prof.upper)] <- NA 
+    }
+  }
+  
+  lci <- approx(prof.lower,prof.l.avec,
+                xout = thr_95)
+  
+  uci <- approx(prof.upper,prof.u.avec,
+                xout = thr_95, ties="ordered")
+  
+  res <- c('LCI'=lci$y, 'UCI'=uci$y)
+  
+  if(graph==TRUE){
+    # The likelihood profile is pretty ugly for the values at the boundary
+    plot(rang.mnll~rang.parI, 
+         main="", pch=20, ty="o",
+         xlab=names(parI), ylab="Negative Log Likelihood")
+    abline(h=thr_95, lty=2, col="darkgrey", lwd=2)
+    abline(v=res, lty=3, col="darkgrey", lwd=2)
+  }
+  return(res)
+}
 
 #######################################
 # Becaus ethe other models are not using an EM algorthim and can generally be divided into
@@ -215,7 +291,6 @@ CI.Slice <- function(SL, TA, parI, parF, trans.par, NLL, rang.b, mnll.m, B=100, 
   return(res)
 }
 
-
 #######################################
 # CCRW_HMM
 
@@ -245,7 +320,7 @@ ciCCRWpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   
   # g11
   CI[1,2:3] <- CI.PL.EM(SL,TA, mleM[1], mleM[1:6], missL, parF, rangePar[1,], mleM['mnll'], 
-                        notMisLoc, B=B, graph)
+                        notMisLoc, B, graph)
   
   # gEE
   CI[2,2:3] <- CI.PL.EM(SL,TA, mleM[2], mleM[1:6], missL, parF, rangePar[2,], mleM['mnll'], 
@@ -267,7 +342,63 @@ ciCCRWpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   return(CI)
 }
 
+#######################################
+# CCRW - numerical maximization
 
+ciCCRWdnpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
+  movD <- movFormat(movltraj, TAc)
+  SL <- movD$SL
+  TA_C <- movD$TA_C
+  TA <- movD$TA
+  SLmin <- movD$SLmin
+  SLmax <- movD$SLmax
+  missL <- movD$missL  
+  n <- movD$n
+  notMisLoc <- movD$notMisLoc
+  
+  parF <- list('SLmin'=SLmin, 'missL' = missL)
+  # Some models used transformed parameters in nll
+  # Thus trans.par called in an input of CI.PL
+  trans.par <- function(x){
+    x[1] <- qlogis(x[1])
+    x[2] <- qlogis(x[2])
+    x[3] <- log(x[3]) - .Machine$double.xmin
+    x[4] <- log(x[4]) - .Machine$double.xmin
+    x[5] <- log(x[5]) # Note that kappa can be 0 (uniform)
+    return(x)
+  }
+  
+  CI <- matrix(NA,nrow=5,ncol=3)
+  rownames(CI) <- names(mleM[1:5])
+  colnames(CI) <- c("estimate","L95CI", "U95CI")
+  CI[,1] <- mleM[1:5]
+  
+  if(graph==TRUE){
+    layout(matrix(1:5, nrow=1))
+  }
+  
+  # g11
+  CI[1,2:3] <- CI.PL(SL,TA, mleM[1], mleM[1:5], trans.par, nllCCRWdn, parF, rangePar[1,],
+                     mleM['mnll'], B=B, graph)
+  
+  # gEE
+  CI[2,2:3] <- CI.PL(SL,TA, mleM[2], mleM[1:5], trans.par, nllCCRWdn, parF, rangePar[2,],
+                     mleM['mnll'], B=B, graph)
+  
+  # lI
+  CI[3,2:3] <- CI.PL(SL,TA, mleM[3], mleM[1:5], trans.par, nllCCRWdn, parF, rangePar[3,],
+                     mleM['mnll'], B=B, graph)
+  
+  # lE
+  CI[4,2:3] <- CI.PL(SL,TA, mleM[4], mleM[1:5], trans.par, nllCCRWdn, parF, rangePar[4,],
+                     mleM['mnll'], B=B, graph)
+  
+  # kappa_T
+  CI[5,2:3] <- CI.PL(SL,TA, mleM[5], mleM[1:5], trans.par, nllCCRWdn, parF, rangePar[5,],
+                     mleM['mnll'], B=B, graph)
+  
+  return(CI)
+}
 
 #######################################
 # LW

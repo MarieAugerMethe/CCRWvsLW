@@ -144,7 +144,7 @@ ptpar <- function(SL,SLmin,SLmax,mu){
 
 # function that test the absolut fit
 
-pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,graph,Uinfo=FALSE){
+pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,graph,Uinfo=FALSE,dn=FALSE){
   
 	##########################################################
 	# Pseudo residuals
@@ -180,8 +180,13 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
   
   if(!any(is.na(mleMov$CCRW[1:6]))){
     gamm <- matrix(c(mleMov$CCRW[1], 1-mleMov$CCRW[2], 1-mleMov$CCRW[1], mleMov$CCRW[2]),2)
-    w <- HMMwi(SL,TA,missL,SLmin,
-      mleMov$CCRW[3:4], mleMov$CCRW[5], gamm, mleMov$CCRW[6:7], notMisLoc)
+    if(dn){
+      w <- HMMwi(SL,TA,missL,SLmin,
+                 mleMov$CCRW[3:4], mleMov$CCRW[5], gamm, mleMov$CCRW[8:9], notMisLoc)
+    }else{
+      w <- HMMwi(SL,TA,missL,SLmin,
+                            mleMov$CCRW[3:4], mleMov$CCRW[5], gamm, mleMov$CCRW[6:7], notMisLoc)
+    }
     
     U_SL_CCRW <- w[1,notMisLoc] * pexp(SL-SLmin,mleMov$CCRW[3]) +
       w[2,notMisLoc] * pexp(SL-SLmin,mleMov$CCRW[4])
@@ -199,7 +204,6 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
     Z[,6] <- pseudo.u.test(U_TA_CCRW, 1, n, graph[1], "TA")
   }
 
-  
   #####
   # SL
   
@@ -245,8 +249,6 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
   
 	##########################################################
 	# Normal pseudo residuals
-
-
 
 	######################
 	# SL

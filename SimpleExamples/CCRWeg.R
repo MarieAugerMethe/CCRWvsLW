@@ -63,3 +63,34 @@ round(movResTA$pseudoRes$PR["pval",],3)
 round(movResTA$pseudoRes$Z["pval",],3)
 # We see that all turning angle (TA) distributions are insufficient (sig. dif.)
 # but the SL distribution of CCRW is not sig. dif
+
+############################
+# Using the numerical maximasation instead of EM-algorithm.
+movResDN <- movLikelihoods(mov, PRdetails=TRUE,dn=TRUE)
+# Much slower!
+
+# But one less parameter (dI), which is actually a nuisance parameter.
+movResDN$mleMov$CCRW
+movRes$mleMov$CCRW
+
+# To look at the best model compare AICc
+AICcResDN <- unlist(movResDN$mle)[grep("AICc", names(unlist(movResDN$mle)))] # CCRW is the best
+AICcResDN - min(AICcResDN) # By far
+
+# Compare parameter estimates to simulation values
+cbind(simVal=c(gII,gEE,lI,lE,kE), parEst=movResDN$mle$CCRW[1:5]) # Pretty good
+
+# Look at confidence intervals, the "true"/simulated value don't always fall in the 95%CI
+cbind(simVal=c(gII,gEE,lI,lE,kE), movResDN$CI$CCRW,
+      inInt = movResDN$CI$CCRW[,2]<=c(gII,gEE,lI,lE,kE) & movResDN$CI$CCRW[,3]>=c(gII,gEE,lI,lE,kE))
+
+# Look at the profile likelihood CI
+par(mar=c(4,4,0.5,0.5), mgp=c(2.5,0.8,0))
+rangeB <- cbind(movResDN$CI$CCRW[,2]*0.95,movResDN$CI$CCRW[,3]*1.05)
+ciPL <- ciCCRWdnpl(mov, movResDN$mle$CCRW, rangePar=rangeB)
+cbind(simVal=c(gII,gEE,lI,lE,kE), ciPL,
+      inInt = ciPL[,2]<=c(gII,gEE,lI,lE,kE) & ciPL[,3]>=c(gII,gEE,lI,lE,kE))
+
+# Look at test of absolute fit
+# With an alpha of 0.05, not significantly different from CCRW
+round(movRes$pseudoRes$PR["pval",],3)
