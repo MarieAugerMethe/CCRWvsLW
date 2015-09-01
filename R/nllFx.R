@@ -130,28 +130,6 @@ nllCCRW <- function(SL,TA,x,parF){
 	# Constrained to be between 0 and 1
 	delta <- c(dI, dE)
 
-	# Parameters for the state-dependent probabilities of observations
-	# Some of the parameters are set and were defined above
-	# Not sure if this is ok, but sometime optim gives x[3:4]
-	# that are so big that exp(x[3:4]) = Inf
-	# which screws up everything. SO I have made an if statement for such case
-#	if (lI == Inf){
-#		lI <- .Machine$double.xmax # Largest number allowed by R for my machine
-#	}
-#	if (lE == Inf){
-#		lE <- .Machine$double.xmax # Largest number allowed by R for my machine
-#	}
-
-	# Similarly lI & lE should not be zero
-	# When it the has a zero value quadra crashes
-#	if (lI == 0){
-#		lI <- .Machine$double.xmin # Smallest number allowed by R for my machine 
-#		# (actually I think I can get smaller), but should be ok. 
-#	}
-#	if (lE == 0){
-#		lE <- .Machine$double.xmin # Smallest number allowed by R for my machine
-#	}
-
 	# P(x_t) is the diag of p_i(x_t)
 	P <- function(SL_t,TA_t){
 		# State 1: F
@@ -191,7 +169,7 @@ nllCCRW <- function(SL,TA,x,parF){
 # CCRW for numerical maximization (instead of EM-algorithm)
 
 nllCCRWdn <- function(SL,TA,x,parF=list(SLmin=min(SL),missL=missL)){
-  # ParF should have SLmin and dI & dE and missL
+  # ParF should have SLmin and missL
   
   # Based on ch3 of Zucchini & MacDonald 2009
   # This is likelihood function that can be numerically maximize with respect to the parameters
@@ -313,6 +291,103 @@ nllCCRWdn <- function(SL,TA,x,parF=list(SLmin=min(SL),missL=missL)){
     pE <-   dexp(SL_t-SLmin,lE) * dvm(TA_t, 0, kE)
     
     result <- diag(c(pI,pE))
+  }
+  
+  
+  ########################
+  # Creating the variables that will save values during the recursive
+  # calculation of the likelihood
+  phi <- matrix(NA, ncol=2, nrow = n)
+  
+  #####################
+  # Initialising the likelihood
+  
+  # The weight and scaled forward probabilities of the initial state
+  w_1 <- delta %*% P(SL[1],TA[1]) %*% t_1
+  phi[1,] <- (1/w_1) %*% delta %*% P(SL[1],TA[1])
+  # the log likelihood of the 1st observation
+  LL <- log(w_1)
+  for (i in 2:n){
+    v <- phi[(i-1),] %*% (Gamma %^% missL[i-1]) %*% P(SL[i],TA[i])
+    u <- v %*% t_1
+    LL <- LL + log(u)
+    phi[i,] <- (1 / u) %*% v 
+  }
+  return(-LL) # Return loglikelihood
+}
+
+
+#######################################
+# CCRW for numerical maximization with weibull and wrapped Cauchy
+
+nllCCRWww <- function(SL,TA,x,parF=list(missL=missL)){
+  # ParF should have missL
+  
+  ####
+  # Set parameters
+  n <- length(SL) # Length of time serie, refered as T in text
+  t_1 <- matrix(1,nrow=2) # this is 1' or t(1)
+  
+  # Set parameters of state-dependent probabilities of observations
+  # Uniform angle distribution for F: mu =0, kappa=0
+  # Forward persistance for T: mu=0
+  
+  #####
+  # Parameters to estimate
+  
+  # Note that to be able to use unconstrained optimizers
+  # I have transformed the parameters
+  # plogis constraint values betwen 0 & 1
+  # exp() > 0 (actually, because of rounding >=0)
+  gII <- plogis(x[1])
+  gEE <- plogis(x[2])
+  scI <- .Machine$double.xmin + exp(x[3])
+  scE <- .Machine$double.xmin + exp(x[4])
+  shI <- .Machine$double.xmin + exp(x[5])
+  shE <- .Machine$double.xmin + exp(x[6])
+  rE <- plogis(x[7]) # Note that kappa can be 0 (uniform)
+  
+  
+  ##
+  # To allow to fix some of the parameters
+  # This is need for the profile likelihood CI
+  if(length(parF)>0){
+    for (i in 1:length(parF)){
+      assign(names(parF[i]),parF[[i]])
+    }
+  }
+  
+  # Gamma = the t.p.m
+  # Only estimating gII, gEE,
+  # a12 & a21 are (1-gII) and (1-gEE), respectively
+  # This assures that the row of the t.p.m sum to 1
+  # Which mean that you will end up in one of the 2 states at the next time step
+  # with a probability of 1
+  Gamma = matrix(c(gII,(1-gII),(1-gEE),gEE), nrow=2, byrow=T)
+  
+  # Here I am using the stationary distribution of the Markov Chain
+  # for the initial distribution of the Markov Chain
+  tpm <- matrix(c(gII, (1-gEE), (1-gII), gEE), nrow=2, byrow=TRUE)
+  dI <- eigen(tpm)$vectors[,1]
+  # Need to normalise the eigen vector to sum to 1
+  dI <- dI/sum(dI)
+  dI <- dI[1]
+  delta <- c(dI, 1-dI)
+  
+  # P(x_t) is the diag of p_i(x_t)
+  P <- function(SL_t,TA_t){
+    # Using weibull instead of exponential, shape (beta) and scale (eta) instead of lambda
+    # Using wrapped Cauchy instead of vonMises,rho ineats of kappa. rho needs to be constrained between 0 & 1
+    # The weibull distribution can only take values of 0 if the shI is 1, so remove SLmin, but still ignore the
+    # SL that are 0
+    
+    # State 1: Intensive
+    pI <-   dweibull(SL_t, shI, scI) * dwrpcauchy(TA_t, 0, 0)
+    # State 2: Extensive
+    pE <-   dweibull(SL_t, shE, scE) * dwrpcauchy(TA_t, 0, rE)
+    
+    result <- diag(c(pI,pE))
+    return(result)
   }
   
   

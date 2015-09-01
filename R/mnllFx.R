@@ -173,6 +173,86 @@ mnllCCRWdn <- function(SL, TA, TA_C, missL, SLmin){
   return(mleCCRW)
 }
 
+#########
+# Using direct numerical minimization (instead of EM-algorithm)
+mnllCCRWww <- function(SL, TA, TA_C, missL){
+  
+  ######################################################################
+  # Setting starting values
+  # scI & scE
+  # based on the smallest quantiles
+  sc0 <- matrix(quantile(SL, c(0.15, 0.25, 0.85, 0.75)),ncol=2)
+  nL <- length(sc0[,1])
+  # Shape paremeter equivalent to exponentional
+  sh0 <- rep(1,2)
+  
+  # According to Zucchini and MacDonald 2009,
+  # starting values for the transition probability matrix should be symmetric (gII=gEE).
+  # So for highest value we use symetric probability.
+  # Although the probability of remaining in the intensive behavior should always be
+  # high those of the extensive behavior can be low. So we explore low probability values.
+  g0 <- c(0.1,0.3,0.5,0.7,0.9)
+  nA <- length(g0)
+  
+  # Because we use symetric transition probabilty matrices, 
+  # the stationary distribution of the behaviours are 0.5.
+  # Therefore k0 can be based on the 0.5 quantile
+  TA_T <- TA_C[TA>quantile(TA, 0.25) & TA<quantile(TA, 0.75)]
+  r0 <- mle.wrappedcauchy(TA_T, mu=circular(0))$rho
+  
+  par0 <- cbind(qlogis(rep(g0,each=nL)),qlogis(rep(g0,each=nL)),
+                log(rep(sc0[,1],nA)),log(rep(sc0[,2],nA)),
+                log(sh0[1]),log(sh0[2]),qlogis(r0))
+  
+  # Creating a matrix that will save the minimiztion results
+  mnll <- matrix(NA, ncol=8, nrow=nrow(par0))
+  colnames(mnll) <- c("gII", "gEE", "scI", "scE", "shI", "shE", "rE", "mnll")
+  
+  for (i in 1:nrow(par0)){
+    mnllRes <- tryCatch(optim(par0[i,],nllCCRWww,SL=SL,TA=TA, parF=list(missL=missL)),
+                        error=function(e) list(par=rep(NA,7),'value'=NA))
+    mnll[i,1:2] <- plogis(mnllRes$par[1:2])
+    mnll[i,3:6] <- .Machine$double.xmin + exp(mnllRes$par[3:6])
+    mnll[i,7] <- plogis(mnllRes$par[7])
+    mnll[i,'mnll'] <- mnllRes$value
+  }
+  mnll <- mnll[which.min(mnll[,'mnll']),]
+  
+  gamm <- function(x){
+    matrix(c(x[1],(1-x[1]),(1-x[2]),x[2]), byrow=TRUE, nrow=2)
+  }
+  
+  if (length(mnll)==0){ # In case no minimization was able to get good values
+    mleCCRW <- rep(NA,12)
+    names(mleCCRW) <- c("gII", "gEE", "scI", "scE", "shI", "shE", "rE", "mnll", "I*","E*", "AIC", "AICc")
+  }else{
+    
+    # For the comparison purposes and for fitting to observed data
+    # I'm estimating the stationary distribution of the HMM
+    stdist <- function(gg){
+      e_R <- eigen(t(gamm(gg))) # Get the eigenvalues and eigenvectors
+      delta <- e_R$vectors[,1] # To get the dominant eigen vector
+      delta <- delta/(sum(delta)) # Normalised dominant eigen vector
+      names(delta) <- c("I*","E*")
+      return(delta)
+    }
+    delta <- stdist(mnll[1:2]) # Get the eigenvalues and eigenvectors
+    
+    # According to Burnham and Anderson (2002)
+    # AIC = 2*nll +2*k
+    # AICc = AIC + 2*k*(k+1)/(n-K-1)
+    # Number of parameters estimated (1 less because no delta, using stationary distribution and no SLmin),
+    # but extra shape parameter for each weibull step length dist: k=7:
+    #     2 scale + 2 shape + 2 trans prob + 1 rho
+    AICCCRW <- matrix(NA, ncol=2)
+    names(AICCCRW) <- c("AIC", "AICc")
+    AICCCRW[,1] <- 14 + 2*mnll["mnll"]
+    AICCCRW[,2] <- AICCCRW[,1] + 112/(length(SL)-8)
+    mleCCRW <- c(mnll, delta, AICCCRW)
+  }
+  return(mleCCRW)
+}
+
 ################################
 # LW
 

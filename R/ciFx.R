@@ -144,6 +144,45 @@ ciCCRWdn <- function(SL,TA,SLmin,missL,mleM){
   return(CI)
 }
 
+#######################################
+# CCRW - direct numerical minimization weibull and wrapped cauchy
+
+ciCCRWww <- function(SL,TA,missL,mleM){
+  # Table for the CI
+  CI <- matrix(NA, nrow=7, ncol=3)
+  rownames(CI) <- names(mleM[1:7])
+  colnames(CI) <- c("estimate","L95CI", "U95CI")
+  
+  # Parameter estimates
+  CI[,1] <- mleM[1:7]
+  
+  parF <- list("missL"=missL)
+  trans.par <- function(x){
+    x[1] <- qlogis(x[1])
+    x[2] <- qlogis(x[2])
+    x[3] <- log(x[3] - .Machine$double.xmin)
+    x[4] <- log(x[4] - .Machine$double.xmin)
+    x[5] <- log(x[5] - .Machine$double.xmin)
+    x[6] <- log(x[6] - .Machine$double.xmin)
+    x[7] <- qlogis(x[7])
+    return(x)
+  }
+  
+  M <- diag(c(
+    CI[1,1]*(1-CI[1,1]),
+    CI[2,1]*(1-CI[2,1]),
+    CI[3,1], CI[4,1], CI[5,1],CI[6,1],CI[7,1]))
+  
+  if(any(is.na(mleM[1:7]))){
+    warning("The optim return NA values for the parameters, so no CI calculated")
+  }else{
+    CI[,2:3] <- CI.Hessian(SL,TA, CI[,1], trans.par, M,
+                           parF=parF, nllCCRWww)
+  }
+  
+  return(CI)
+}
+
 
 #######################################
 # LW

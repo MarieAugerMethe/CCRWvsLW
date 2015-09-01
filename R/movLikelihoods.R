@@ -3,7 +3,7 @@
 # Date created: March 28, 2011
 # Updated: April 3, 2013
 
-movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=TRUE, dn=FALSE){
+movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=TRUE, dn=FALSE, ww=FALSE){
   
   #######################################
   # This script estimates the parameters and calculates the AIC of multiple movement models:
@@ -89,6 +89,11 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=T
   mleMov <- list(mleCCRW, mleLW, mleTLW, mleBW, mleCRW, mleTBW, mleTCRW)
   names(mleMov) <- c("CCRW", "LW", "TLW", "BW", "CRW", "TBW", "TCRW")
 
+  if(ww){
+    mleCCRWww <- mnllCCRWww(SL, TA, TA_C, missL)
+    mleMov$CCRWww <- mleCCRWww
+  }
+  
   ######################
   # Calculating the CI
   
@@ -122,6 +127,10 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=T
   
   # K
   CI[['K']] <- ciK(SL, TA, SLmin, mleCRW)
+  
+  if(ww){
+    CI$CCRWww <- ciCCRWww(SL,TA,missL,mleCCRWww)
+  }
   
   #######
   # Test of absolute fit
