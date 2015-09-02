@@ -65,8 +65,8 @@ round(movResTA$pseudoRes$Z["pval",],3)
 # but the SL distribution of CCRW is not sig. dif
 
 ############################
-# Using the numerical maximasation instead of EM-algorithm.
-movResDN <- movLikelihoods(mov, PRdetails=TRUE,dn=TRUE)
+# Using the numerical maximisation instead of EM-algorithm.
+movResDN <- movLikelihoods(mov, PRdetails=TRUE, dn=TRUE)
 # Much slower!
 
 # But one less parameter (dI), which is actually a nuisance parameter.
@@ -87,10 +87,49 @@ cbind(simVal=c(gII,gEE,lI,lE,kE), movResDN$CI$CCRW,
 # Look at the profile likelihood CI
 par(mar=c(4,4,0.5,0.5), mgp=c(2.5,0.8,0))
 rangeB <- cbind(movResDN$CI$CCRW[,2]*0.95,movResDN$CI$CCRW[,3]*1.05)
-ciPL <- ciCCRWdnpl(mov, movResDN$mle$CCRW, rangePar=rangeB)
+# ciCCRWdnpl will return an error if the range span is outside the parameter space
+# e.g. 0 < gII < 1 
+rangeB[1,2] <- min(rangeB[1,2], 1-1e-20)
+rangeB[2,2] <- min(rangeB[2,2], 1-1e-20)  
+ciPL <- ciCCRWdnpl(mov, movResDN$mle$CCRW, rangePar=rangeB, B=15) # slow so only looking at 15 values for this example
+
 cbind(simVal=c(gII,gEE,lI,lE,kE), ciPL,
       inInt = ciPL[,2]<=c(gII,gEE,lI,lE,kE) & ciPL[,3]>=c(gII,gEE,lI,lE,kE))
 
 # Look at test of absolute fit
 # With an alpha of 0.05, not significantly different from CCRW
-round(movRes$pseudoRes$PR["pval",],3)
+round(movResDN$pseudoRes$PR["pval",],3)
+
+############################
+# Using CCRW that use weibull adn wrapped cauchy instead of exponential and von mises distributions
+# This is numerically minimise automatically (no option for EM algorithm)
+movResWW <- movLikelihoods(mov, PRdetails=TRUE, dn=TRUE, ww=TRUE)
+
+# Looks at both original CCRW and CCRWww
+# slightly different models with different parameters
+movResWW$mleMov$CCRW
+movResWW$mleMov$CCRWww
+
+# To look at the best model compare AICc
+AICcResWW <- unlist(movResWW$mle)[grep("AICc", names(unlist(movResWW$mle)))]
+AICcResWW - min(AICcResWW) # By far
+
+# Look paraneters and confidence intervals (no true values since not mode simulated)
+movResWW$CI$CCRWww
+
+# Look at the profile likelihood CI
+par(mar=c(4,4,0.5,0.5), mgp=c(2.5,0.8,0))
+rangeB <- cbind(movResWW$CI$CCRWww[,2]*0.95,movResWW$CI$CCRWww[,3]*1.05)
+# ciCCRWdnpl will return an error if the range span is outside the parameter space
+# e.g. 0 < gII < 1 
+rangeB[1,2] <- min(rangeB[1,2], 1-1e-20)
+rangeB[2,2] <- min(rangeB[2,2], 1-1e-20)  
+rangeB[7,2] <- min(rangeB[7,2], 1-1e-20)  
+ciPL <- ciCCRWwwpl(mov, movResWW$mle$CCRWww,
+                   rangePar=rangeB, B=15) # slow so only looking at 15 values for this example
+ciPL
+
+# Look at test of absolute fit
+# With an alpha of 0.05, not significantly different from CCRW
+round(movResWW$pseudoRes$PR["pval",],3)
+# Significantly different because it's a different model

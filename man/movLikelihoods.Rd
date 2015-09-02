@@ -4,7 +4,7 @@
 \title{Fit seven random walk models to a movement path}
 \description{Minimize the negative log-likelihood for the BW.}
 \usage{
-movLikelihoods(movltraj, graph = TRUE, PRdetails = FALSE, TAc = 0, conts=TRUE, dn=FALSE)
+movLikelihoods(movltraj, graph = TRUE, PRdetails = FALSE, TAc = 0, conts=TRUE, dn=FALSE, ww=FALSE)
 }
 \arguments{
   \item{movltraj}{one ltraj object containing the movement path}
@@ -13,6 +13,7 @@ movLikelihoods(movltraj, graph = TRUE, PRdetails = FALSE, TAc = 0, conts=TRUE, d
   \item{TAc}{one numeric value for the threshold angle used in the local turn method}
   \item{conts}{logical value stating whether to contrain mu between 1 and 3 (i.e. the values relevant for the Levy walk searching strategy)}
   \item{dn}{logical value stating whether to direct numerical maximization of the log likelihood is used rather than the EM-algorithm for the CCRW. see details}
+  \item{ww}{logical value stating whether to investigate the CCRW with weibull distributions for SL and wrapped cauchy for TA.}
 }
 \details{movLikelihoods fits a CCRW, TLW, LW, BW, CRW, TBW, TCRW to a movement path.
 

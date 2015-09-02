@@ -135,21 +135,33 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=T
   #######
   # Test of absolute fit
 	pseudoRes <- pseudo(SL, TA_C, TA, SLmin, SLmax, missL, notMisLoc, n,
-                      mleMov, PRdetails, graph, dn=dn)
+                      mleMov, PRdetails, graph, dn=dn, ww=ww)
+  
+  
   
 	if(graph==TRUE){
-    #windows()
+	  # Plot the best CCRW if ww explored
+	  if(ww){
+	    wwB <- which.min(c(mleMov$CCRW["AICc"], mleMov$CCRWww["AICc"])) == 2
+	  }else{
+	    wwB <- FALSE
+	  }
     layout(matrix(1:3,nrow=1))
-    # Movemeth trajectory with CCRW 
-    gamm <- matrix(c(mleMov$CCRW[1], 1-mleMov$CCRW[2], 1-mleMov$CCRW[1], mleMov$CCRW[2]),2)
-    if(dn){
-      w <- HMMwi(SL,TA,missL,SLmin, mleMov$CCRW[3:4], mleMov$CCRW[5], gamm,
-                 mleMov$CCRW[8:9], notMisLoc)
+    if(wwB){
+      gamm <- matrix(c(mleMov$CCRWww[1], 1-mleMov$CCRWww[2], 1-mleMov$CCRWww[1], mleMov$CCRWww[2]),2)
+      w <- HMMwiww(SL, TA, missL, 
+                     mleMov$CCRWww[5:6], mleMov$CCRWww[3:4], mleMov$CCRWww[7], gamm, mleMov$CCRWww[9:10],
+                     notMisLoc)
     }else{
-      w <- HMMwi(SL,TA,missL,SLmin, mleMov$CCRW[3:4], mleMov$CCRW[5], gamm,
-                 mleMov$CCRW[6:7], notMisLoc)  
+      gamm <- matrix(c(mleMov$CCRW[1], 1-mleMov$CCRW[2], 1-mleMov$CCRW[1], mleMov$CCRW[2]),2)
+      if(dn){
+        w <- HMMwi(SL,TA,missL,SLmin, mleMov$CCRW[3:4], mleMov$CCRW[5], gamm,
+                   mleMov$CCRW[8:9], notMisLoc)
+      }else{
+        w <- HMMwi(SL,TA,missL,SLmin, mleMov$CCRW[3:4], mleMov$CCRW[5], gamm,
+                   mleMov$CCRW[6:7], notMisLoc)
+      }  
     }
-    
     plot(movltraj, addpoints=FALSE, final=FALSE)
     points(movltraj[[1]]$x,movltraj[[1]]$y,bg=c(0,grey(w[2,]),0),pch=21, cex=c(0,w[1,],0)+0.7)
 		# histogram with fit

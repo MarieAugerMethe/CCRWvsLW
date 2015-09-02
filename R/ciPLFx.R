@@ -113,7 +113,7 @@ CI.PL.EM <- function(SL, TA, parI, parMLE, missL, parF, rang.b, mnll.m, notMisLo
 }
 
 #######################################
-CI.PL <- function(SL, TA, parI, parMLE, trans.par, NLL, parF, rang.b, mnll.m, B=100,graph=T){
+CI.PL <- function(SL, TA, parI, parMLE, trans.par, NLL, parF, rang.b, mnll.m, B=100, graph=TRUE){
   
   # Function inputs
   # SL: step length
@@ -296,19 +296,8 @@ CI.Slice <- function(SL, TA, parI, parF, trans.par, NLL, rang.b, mnll.m, B=100, 
 
 ciCCRWpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   movD <- movFormat(movltraj, TAc)
-  SL <- movD$SL
-  TA_C <- movD$TA_C
-  TA <- movD$TA
-  SLmin <- movD$SLmin
-  SLmax <- movD$SLmax
-  missL <- movD$missL  
-  n <- movD$n
-  notMisLoc <- movD$notMisLoc
+  parF <- list('SLmin'= movD$SLmin)
   
-  parF <- list('SLmin'=SLmin)
-  
-  # Note that although I put places for the deltas or a and b
-  # I won't get any CIs
   CI <- matrix(NA,nrow=5,ncol=3)
   rownames(CI) <- names(mleM[1:5])
   colnames(CI) <- c("estimate","L95CI", "U95CI")
@@ -318,26 +307,10 @@ ciCCRWpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
     layout(matrix(1:5, nrow=1))
   }
   
-  # g11
-  CI[1,2:3] <- CI.PL.EM(SL,TA, mleM[1], mleM[1:6], missL, parF, rangePar[1,], mleM['mnll'], 
-                        notMisLoc, B, graph)
-  
-  # gEE
-  CI[2,2:3] <- CI.PL.EM(SL,TA, mleM[2], mleM[1:6], missL, parF, rangePar[2,], mleM['mnll'], 
-                        notMisLoc, B, graph)
-  
-  # lI
-  CI[3,2:3] <- CI.PL.EM(SL,TA, mleM[3], mleM[1:6], missL, parF, rangePar[3,], mleM['mnll'], 
-                        notMisLoc, B, graph)
-  
-  # lE
-  CI[4,2:3] <- CI.PL.EM(SL,TA, mleM[4], mleM[1:6], missL, parF, rangePar[4,], mleM['mnll'], 
-                        notMisLoc, B, graph)
-  
-  
-  # kappa_T
-  CI[5,2:3] <- CI.PL.EM(SL,TA, mleM[5], mleM[1:6], missL, parF, rangePar[5,], mleM['mnll'], 
-                        notMisLoc, B, graph)
+  for(i in 1:5){
+    CI[i,2:3] <- CI.PL.EM(movD$SL, movD$TA, mleM[i], mleM[1:6], movD$missL, parF, rangePar[i,], mleM['mnll'], 
+                          movD$notMisLoc, B, graph)  
+  }
   
   return(CI)
 }
@@ -347,16 +320,7 @@ ciCCRWpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
 
 ciCCRWdnpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   movD <- movFormat(movltraj, TAc)
-  SL <- movD$SL
-  TA_C <- movD$TA_C
-  TA <- movD$TA
-  SLmin <- movD$SLmin
-  SLmax <- movD$SLmax
-  missL <- movD$missL  
-  n <- movD$n
-  notMisLoc <- movD$notMisLoc
-  
-  parF <- list('SLmin'=SLmin, 'missL' = missL)
+  parF <- list('SLmin'= movD$SLmin, 'missL' = movD$missL)
   # Some models used transformed parameters in nll
   # Thus trans.par called in an input of CI.PL
   trans.par <- function(x){
@@ -377,25 +341,42 @@ ciCCRWdnpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
     layout(matrix(1:5, nrow=1))
   }
   
-  # g11
-  CI[1,2:3] <- CI.PL(SL,TA, mleM[1], mleM[1:5], trans.par, nllCCRWdn, parF, rangePar[1,],
-                     mleM['mnll'], B=B, graph)
+  for(i in 1:5){
+    CI[i,2:3] <- CI.PL(movD$SL, movD$TA, mleM[i], mleM[1:5], trans.par, nllCCRWdn, parF, rangePar[i,],
+                       mleM['mnll'], B=B, graph)
+  }
+  return(CI)
+}
+
+ciCCRWwwpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
+  movD <- movFormat(movltraj, TAc)
+  parF <- list('missL' = movD$missL)
+  # Some models used transformed parameters in nll
+  # Thus trans.par called in an input of CI.PL
+  trans.par <- function(x){
+    x[1] <- qlogis(x[1])
+    x[2] <- qlogis(x[2])
+    x[3] <- log(x[3]) - .Machine$double.xmin
+    x[4] <- log(x[4]) - .Machine$double.xmin
+    x[5] <- log(x[5]) - .Machine$double.xmin
+    x[6] <- log(x[6]) - .Machine$double.xmin
+    x[7] <- qlogis(x[7])
+    return(x)
+  }
   
-  # gEE
-  CI[2,2:3] <- CI.PL(SL,TA, mleM[2], mleM[1:5], trans.par, nllCCRWdn, parF, rangePar[2,],
-                     mleM['mnll'], B=B, graph)
+  CI <- matrix(NA,nrow=7,ncol=3)
+  rownames(CI) <- names(mleM[1:7])
+  colnames(CI) <- c("estimate","L95CI", "U95CI")
+  CI[,1] <- mleM[1:7]
   
-  # lI
-  CI[3,2:3] <- CI.PL(SL,TA, mleM[3], mleM[1:5], trans.par, nllCCRWdn, parF, rangePar[3,],
-                     mleM['mnll'], B=B, graph)
+  if(graph==TRUE){
+    layout(matrix(1:7, nrow=1))
+  }
   
-  # lE
-  CI[4,2:3] <- CI.PL(SL,TA, mleM[4], mleM[1:5], trans.par, nllCCRWdn, parF, rangePar[4,],
-                     mleM['mnll'], B=B, graph)
-  
-  # kappa_T
-  CI[5,2:3] <- CI.PL(SL,TA, mleM[5], mleM[1:5], trans.par, nllCCRWdn, parF, rangePar[5,],
-                     mleM['mnll'], B=B, graph)
+  for(i in 1:7){
+    CI[i,2:3] <- CI.PL(movD$SL, movD$TA, mleM[i], mleM[1:7], trans.par, nllCCRWww, parF, rangePar[i,],
+                       mleM['mnll'], B=B, graph)  
+  }
   
   return(CI)
 }
