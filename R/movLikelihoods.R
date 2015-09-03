@@ -141,7 +141,7 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=T
   #######
   # Test of absolute fit
 	pseudoRes <- pseudo(SL, TA_C, TA, SLmin, SLmax, missL, notMisLoc, n,
-                      mleMov, PRdetails, graph, dn=dn, ww=ww)
+                      mleMov, PRdetails, graph, dn=dn, ww=ww, hs=hs)
   
   
   

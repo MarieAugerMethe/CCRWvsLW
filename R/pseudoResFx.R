@@ -150,7 +150,7 @@ pwrcauchy <- function(TA,mu,rho){
 
 # function that test the absolut fit
 
-pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,graph,Uinfo=FALSE,dn=FALSE, ww=FALSE){
+pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,graph,Uinfo=FALSE,dn=FALSE, ww=FALSE, hs=FALSE){
   
 	##########################################################
 	# Pseudo residuals
@@ -229,9 +229,23 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
     # SO for SL, you have 4 parameters: scI, scE, shI, shE
     # SO for TA, you have 1 parameter: rE
     Z <- cbind(Z, pseudo.u.test(U_SL_CCRWww, 4, n, graphL[8], "SL"))
-    colnames(Z)[9] <- "SL_CCRWww"
+    colnames(Z)[ncol(Z)] <- "SL_CCRWww"
     Z <- cbind(Z, pseudo.u.test(U_TA_CCRWww, 1, n, graphL[8], "TA"))
-    colnames(Z)[10] <- "TA_CCRWww"
+    colnames(Z)[ncol(Z)] <- "TA_CCRWww"
+  }
+  
+  # Weibull and wrapped Cauchy
+  if(hs){
+    whs <- HSMMwi(SL, TA, missL, notMisLoc, mleMov$HSMM[1:2], mleMov$HSMM[3:4], mleMov$HSMM[5:6], mleMov$HSMM[7:8], mleMov$HSMM[9])
+    U_SL_HSMM <- whs[1,notMisLoc] * pweibull(SL,mleMov$HSMM[7],mleMov$HSMM[5]) +
+      whs[2,notMisLoc] * pweibull(SL,mleMov$HSMM[8],mleMov$HSMM[6])
+    
+    U_TA_HSMM <- whs[1,notMisLoc] * pwrcauchy(TA, 0, 0) +
+      whs[2,notMisLoc] * pwrcauchy(TA, 0, mleMov$HSMM[9])
+    Z <- cbind(Z, pseudo.u.test(U_SL_HSMM, 4, n, graphL[8], "SL"))
+    colnames(Z)[ncol(Z)] <- "SL_HSMM"
+    Z <- cbind(Z, pseudo.u.test(U_TA_HSMM, 1, n, graphL[8], "TA"))
+    colnames(Z)[ncol(Z)] <- "TA_HSMM"
   }
 
   #####
@@ -311,8 +325,13 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
 	PR[,6] <- combP(Z[2,5],Z[2,7]) # TBW
 	PR[,7] <- combP(Z[2,5],Z[2,8]) # TCRW
 	if(ww){
-	  PR <- cbind(PR, t(combP(Z[2,9],Z[2,10]))) # CCRWww
-	  colnames(PR)[8] <- "CCRWww"
+	  PR <- cbind(PR, t(combP(Z[2,"SL_CCRWww"],Z[2,"TA_CCRWww"])))
+	  colnames(PR)[ncol(PR)] <- "CCRWww"
+	}
+	
+	if(hs){
+	  PR <- cbind(PR, t(combP(Z[2,"SL_HSMM"],Z[2,"TA_HSMM"])))
+	  colnames(PR)[ncol(PR)] <- "HSMM"
 	}
 
   if(PRdetails & Uinfo){
