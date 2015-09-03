@@ -253,6 +253,58 @@ mnllCCRWww <- function(SL, TA, TA_C, missL){
   return(mleCCRW)
 }
 
+#######
+# Weibull and wrapped Cauchy hiden semi markoce model CCRW
+
+# Function that runs the numerical maximization of the above likelihood function and returns the results
+mnllHSMM <- function(SL, TA, TA_C, missL, notMisLoc){
+  ########################################
+  # Parameters used accros models
+  ## size of state aggregates
+  m <- c(20,20)
+  
+  # Initial parameter for numerical minimasation
+  gammaSize0 <- log(matrix(c(3,1,3,3),nrow=2)) # number of step in behaviour
+  gammaMu0 <- log(c(1,3))  # negative binomial state dwell-time mu parameters
+  sc0 <- log(matrix(quantile(SL, c(0.15, 0.25, 0.85, 0.75)),ncol=2))
+  sh0 <- log(c(1,1)) # Weibull shape parameters
+  TA_T <- TA_C[TA>quantile(TA, 0.25) & TA<quantile(TA, 0.75)]
+  r0 <- qlogis(mle.wrappedcauchy(TA_T, mu=circular(0))$rho)
+  
+  par0 <- cbind(rep(gammaSize0[,1],2),rep(gammaSize0[,2],2),gammaMu0[1],gammaMu0[2],
+                rep(sc0[,1],each=2),rep(sc0[,2],each=2),sh0[1],sh0[2],r0)
+  
+  # Creating a matrix that will save the minimiztion results
+  mnll <- matrix(NA, ncol=10, nrow=nrow(par0))
+  colnames(mnll) <- c("gSI", "gSE", "gMI", "gME","scI", "scE", "shI", "shE", "rE", "mnll")
+  
+  for(i in 1:nrow(par0)){
+    mnllRes <- tryCatch(nlm(nllHSSM,par0[i,],SL=SL, TA=TA, parF=list("missL"=missL, "notMisLoc"=notMisLoc, "m"=m),
+                            stepmax=500,iterlim=4000),
+                        error=function(e) list("estimate"=rep(NA,9),'minimum'=NA))
+    mnll[i,1:8] <- .Machine$double.xmin + exp(mnllRes$estimate[1:8])
+    mnll[i,9] <- plogis(mnllRes$estimate[9])
+    mnll[i,'mnll'] <- mnllRes$minimum
+  }
+  mnll <- mnll[which.min(mnll[,'mnll']),]
+  if (length(mnll)==0){ # In case no minimization was able to get good values
+    mleHSMM <- rep(NA,12)
+    names(mleHSMM) <- c("gSI", "gSE", "gMI", "gME","scI", "scE", "shI", "shE", "rE", "mnll", "AIC", "AICc")
+  }else{
+    # According to Burnham and Anderson (2002)
+    # AIC = 2*nll + 2*k
+    # AICc = AIC + 2*k*(k+1)/(n-K-1)
+    AICCCRW <- matrix(NA, ncol=2)
+    k <- length(par0[1,])
+    names(AICCCRW) <- c("AIC", "AICc")
+    AICCCRW[,1] <- 2*k + 2*mnll["mnll"]
+    AICCCRW[,2] <- AICCCRW[,1] + (2*k*(k+1))/(length(SL)-k-1)
+    mleHSMM <- c(mnll, AICCCRW)
+  }
+  return(mleHSMM)
+}
+
+
 ################################
 # LW
 
