@@ -607,7 +607,7 @@ gen.Gamma.repar <- function(m,pSize,pMu){
 #########################################################
 # Neg. log likelihood functions
 
-nllHSSM <- function(SL, TA, x, parF){
+nllHSMM <- function(SL, TA, x, parF){
   # oarf need missL and notMissLoc and m
   #####
   # Parameters to estimate - transforming for unconstrained parameter

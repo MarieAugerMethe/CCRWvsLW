@@ -279,7 +279,7 @@ mnllHSMM <- function(SL, TA, TA_C, missL, notMisLoc){
   colnames(mnll) <- c("gSI", "gSE", "gMI", "gME","scI", "scE", "shI", "shE", "rE", "mnll")
   
   for(i in 1:nrow(par0)){
-    mnllRes <- tryCatch(nlm(nllHSSM,par0[i,],SL=SL, TA=TA, parF=list("missL"=missL, "notMisLoc"=notMisLoc, "m"=m),
+    mnllRes <- tryCatch(nlm(nllHSMM,par0[i,],SL=SL, TA=TA, parF=list("missL"=missL, "notMisLoc"=notMisLoc, "m"=m),
                             stepmax=500,iterlim=4000),
                         error=function(e) list("estimate"=rep(NA,9),'minimum'=NA))
     mnll[i,1:8] <- .Machine$double.xmin + exp(mnllRes$estimate[1:8])

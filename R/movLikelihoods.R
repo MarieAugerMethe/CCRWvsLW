@@ -138,6 +138,10 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=T
     CI$CCRWww <- ciCCRWww(SL,TA,missL,mleCCRWww)
   }
   
+  if(hs){
+    CI$HSMM <- ciHSMM(SL,TA,missL,notMisLoc,mleM)
+  }
+  
   #######
   # Test of absolute fit
 	pseudoRes <- pseudo(SL, TA_C, TA, SLmin, SLmax, missL, notMisLoc, n,
