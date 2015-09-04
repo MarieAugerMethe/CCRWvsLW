@@ -139,7 +139,7 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=T
   }
   
   if(hs){
-    CI$HSMM <- ciHSMM(SL,TA,missL,notMisLoc,mleM)
+    CI$HSMM <- ciHSMM(SL,TA,missL,notMisLoc,mleHSMM)
   }
   
   #######

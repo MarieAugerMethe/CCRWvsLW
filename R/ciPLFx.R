@@ -142,17 +142,13 @@ CI.PL <- function(SL, TA, parI, parMLE, trans.par, NLL, parF, rang.b, mnll.m, B=
   }
   
   # Step 2. Divide into two branch (Lower and upper)
-  # Since we divided around the mle we can use the index from above
   prof.lower <- rang.mnll[1:mnll_i]
   prof.l.avec <- rang.parI[1:mnll_i]
-  
   prof.upper <- rang.mnll[mnll_i:B]
   prof.u.avec <- rang.parI[mnll_i:B]
   
   # Step 3. Using linear interpolation to get the value of X for which
-  # neg LL (for the parameter range) =
-  # neg LL (from the real MLE) + chisqdist(0.95)/2
-  
+  # neg LL (for the parameter range) = neg LL (from the real MLE) + chisqdist(0.95)/2
   thr_95 <- mnll.m + qchisq(0.95,1)/2
   
   # So we get to good peak
@@ -324,10 +320,8 @@ ciCCRWdnpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   # Some models used transformed parameters in nll
   # Thus trans.par called in an input of CI.PL
   trans.par <- function(x){
-    x[1] <- qlogis(x[1])
-    x[2] <- qlogis(x[2])
-    x[3] <- log(x[3]) - .Machine$double.xmin
-    x[4] <- log(x[4]) - .Machine$double.xmin
+    x[1:2] <- qlogis(x[1:2])
+    x[3:4] <- log(x[3:4]) - .Machine$double.xmin
     x[5] <- log(x[5]) # Note that kappa can be 0 (uniform)
     return(x)
   }
@@ -354,12 +348,8 @@ ciCCRWwwpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   # Some models used transformed parameters in nll
   # Thus trans.par called in an input of CI.PL
   trans.par <- function(x){
-    x[1] <- qlogis(x[1])
-    x[2] <- qlogis(x[2])
-    x[3] <- log(x[3]) - .Machine$double.xmin
-    x[4] <- log(x[4]) - .Machine$double.xmin
-    x[5] <- log(x[5]) - .Machine$double.xmin
-    x[6] <- log(x[6]) - .Machine$double.xmin
+    x[1:2] <- qlogis(x[1:2])
+    x[3:6] <- log(x[3:6]) - .Machine$double.xmin
     x[7] <- qlogis(x[7])
     return(x)
   }
@@ -380,6 +370,35 @@ ciCCRWwwpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   
   return(CI)
 }
+
+ciHSMMpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
+  movD <- movFormat(movltraj, TAc)
+  parF <- list("missL"= movD$missL, "notMisLoc"= movD$notMisLoc, "m"=c(20,20))
+  # Some models used transformed parameters in nll
+  # Thus trans.par called in an input of CI.PL
+  trans.par <- function(x){
+    x[1:8] <- log(x[1:8]) - .Machine$double.xmin
+    x[9] <- qlogis(x[9])
+    return(x)
+  }
+  
+  CI <- matrix(NA,nrow=9,ncol=3)
+  rownames(CI) <- names(mleM[1:9])
+  colnames(CI) <- c("estimate","L95CI", "U95CI")
+  CI[,1] <- mleM[1:9]
+  
+  if(graph==TRUE){
+    layout(matrix(1:9, nrow=1))
+  }
+  
+  for(i in 1:9){
+    CI[i,2:3] <- CI.PL(movD$SL, movD$TA, mleM[i], mleM[1:9], trans.par, nllHSMM, parF, rangePar[i,],
+                       mleM['mnll'], B=B, graph)  
+  }
+  
+  return(CI)
+}
+
 
 #######################################
 # LW

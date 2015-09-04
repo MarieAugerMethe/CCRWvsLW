@@ -133,3 +133,29 @@ ciPL
 # With an alpha of 0.05, not significantly different from CCRW
 round(movResWW$pseudoRes$PR["pval",],3)
 # Significantly different because it's a different model
+
+
+############################
+# Using HSMM that use weibull adn wrapped cauchy instead of exponential and von mises distributions
+# This is numerically minimise automatically (no option for EM algorithm)
+movResHSMM <- movLikelihoods(mov, PRdetails=TRUE, hs=TRUE)
+
+# To look at the best model compare AICc
+AICcResHSMM <- unlist(movResHSMM$mle)[grep("AICc", names(unlist(movResHSMM$mle)))]
+AICcResHSMM - min(AICcResHSMM)
+
+# Look paraneters and confidence intervals (no true values since not mode simulated)
+movResHSMM$CI$HSMM
+
+# Look at the profile likelihood CI
+rangeB <- cbind(movResHSMM$CI$HSMM[,2]*0.95,movResHSMM$CI$HSMM[,3]*1.50)
+rangeB[1,1] <- max(rangeB[1,1], 1e-5)  
+rangeB[2,1] <- max(rangeB[2,1], 1e-20)  
+rangeB[9,2] <- min(rangeB[9,2], 1-1e-20)  
+ciPL <- ciHSMMpl(mov, movResHSMM$mle$HSMM,
+                   rangePar=rangeB, B=15) # slow so only looking at 15 values for this example
+ciPL
+
+# Look at test of absolute fit
+round(movResHSMM$pseudoRes$PR["pval",],3)
+# Significantly different because it's a different model
