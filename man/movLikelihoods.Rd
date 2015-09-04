@@ -14,7 +14,6 @@ movLikelihoods(movltraj, graph = TRUE, PRdetails = FALSE, TAc = 0, conts=TRUE, d
   \item{conts}{logical value stating whether to contrain mu between 1 and 3 (i.e. the values relevant for the Levy walk searching strategy)}
   \item{dn}{logical value stating whether to direct numerical maximization of the log likelihood is used rather than the EM-algorithm for the CCRW. see details}
   \item{ww}{logical value stating whether to investigate the CCRW with weibull distributions for SL and wrapped cauchy for TA.}
-}
   \item{hs}{logical value stating whether to investigate the CCRW that is a hidden semi Markov model (HSMM) with weibull distributions for SL and wrapped cauchy for TA.}
 }
 \details{movLikelihoods fits a CCRW, TLW, LW, BW, CRW, TBW, TCRW to a movement path.

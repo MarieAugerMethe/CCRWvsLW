@@ -198,7 +198,7 @@ mnllCCRWww <- function(SL, TA, TA_C, missL){
   # the stationary distribution of the behaviours are 0.5.
   # Therefore k0 can be based on the 0.5 quantile
   TA_T <- TA_C[TA>quantile(TA, 0.25) & TA<quantile(TA, 0.75)]
-  r0 <- mle.wrappedcauchy(TA_T, mu=circular(0))$rho
+  r0 <- qlogis(max(mle.wrappedcauchy(TA_T, mu=circular(0))$rho,1e-20))
   
   par0 <- cbind(qlogis(rep(g0,each=nL)),qlogis(rep(g0,each=nL)),
                 log(rep(sc0[,1],nA)),log(rep(sc0[,2],nA)),
@@ -269,7 +269,7 @@ mnllHSMM <- function(SL, TA, TA_C, missL, notMisLoc){
   sc0 <- log(matrix(quantile(SL, c(0.15, 0.25, 0.85, 0.75)),ncol=2))
   sh0 <- log(c(1,1)) # Weibull shape parameters
   TA_T <- TA_C[TA>quantile(TA, 0.25) & TA<quantile(TA, 0.75)]
-  r0 <- qlogis(mle.wrappedcauchy(TA_T, mu=circular(0))$rho)
+  r0 <- qlogis(max(mle.wrappedcauchy(TA_T, mu=circular(0))$rho,1e-20))
   
   par0 <- cbind(rep(gammaSize0[,1],2),rep(gammaSize0[,2],2),gammaMu0[1],gammaMu0[2],
                 rep(sc0[,1],each=2),rep(sc0[,2],each=2),sh0[1],sh0[2],r0)

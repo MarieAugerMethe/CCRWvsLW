@@ -205,11 +205,11 @@ ciHSMM <- function(SL,TA,missL,notMisLoc,mleM){
   
   M <- diag(CI[1:9,1])
   
-  if(any(is.na(mleM[1:7]))){
+  if(any(is.na(mleM[1:9]))){
     warning("The optim return NA values for the parameters, so no CI calculated")
   }else{
-    CI[,2:3] <- CI.Hessian(SL,TA, CI[,1], trans.par, M,
-                           parF=parF, nllHSMM)
+    CI[,2:3] <- tryCatch(CI.Hessian(SL,TA, CI[,1], trans.par, M,
+                           parF=parF, nllHSMM), error=function(e) c(NA,NA))
   }
   
   return(CI)
