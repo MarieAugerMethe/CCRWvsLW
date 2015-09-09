@@ -279,12 +279,12 @@ mnllHSMM <- function(SL, TA, TA_C, missL, notMisLoc){
   colnames(mnll) <- c("gSI", "gSE", "gMI", "gME","scI", "scE", "shI", "shE", "rE", "mnll")
   
   for(i in 1:nrow(par0)){
-    mnllRes <- tryCatch(nlm(nllHSMM,par0[i,],SL=SL, TA=TA, parF=list("missL"=missL, "notMisLoc"=notMisLoc, "m"=m),
-                            stepmax=500,iterlim=4000),
-                        error=function(e) list("estimate"=rep(NA,9),'minimum'=NA))
-    mnll[i,1:8] <- .Machine$double.xmin + exp(mnllRes$estimate[1:8])
-    mnll[i,9] <- plogis(mnllRes$estimate[9])
-    mnll[i,'mnll'] <- mnllRes$minimum
+    mnllRes <- tryCatch(optim(par0[i,],nllHSMM,SL=SL,TA=TA, 
+                              parF=list("missL"=missL, "notMisLoc"=notMisLoc, "m"=m)),
+                        error=function(e) list("par"=rep(NA,9),'value'=NA))
+    mnll[i,1:8] <- .Machine$double.xmin + exp(mnllRes$par[1:8])
+    mnll[i,9] <- plogis(mnllRes$par[9])
+    mnll[i,'mnll'] <- mnllRes$value
   }
   mnll <- mnll[which.min(mnll[,'mnll']),]
   if (length(mnll)==0){ # In case no minimization was able to get good values
