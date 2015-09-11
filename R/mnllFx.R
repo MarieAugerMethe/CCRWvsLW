@@ -283,8 +283,8 @@ mnllHSMM <- function(SL, TA, TA_C, missL, notMisLoc){
     mnllRes <- tryCatch(optim(par0[i,],nllHSMM,SL=SL,TA=TA, 
                               parF=list("missL"=missL, "notMisLoc"=notMisLoc, "m"=m)),
                         error=function(e) list("par"=rep(NA,9),'value'=NA))
-    mnll[i,1:8] <- .Machine$double.xmin + exp(mnllRes$par[1:8])
-    mnll[i,9] <- plogis(mnllRes$par[9])
+    mnll[i,c(1:2,5:8)] <- .Machine$double.xmin + exp(mnllRes$par[c(1:2,5:8)])
+    mnll[i,c(3:4,9)] <- plogis(mnllRes$par[c(3:4,9)])
     mnll[i,'mnll'] <- mnllRes$value
   }
   mnll <- mnll[which.min(mnll[,'mnll']),]
