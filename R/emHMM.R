@@ -170,7 +170,7 @@ nllHSSM <- function(SL, TA, x, parF){
 }
 
 ## for HSMM
-HSMM.lalphabeta <- function(SL,TA, missL, sh, sc, rE, gamSize, gamMu, notMisLoc,m = c(20,20)){
+HSMM.lalphabeta <- function(SL,TA, missL, sh, sc, rE, gamSize, gamMu, notMisLoc,m = c(10,10)){
   
   gamma <- gen.Gamma.repar(m,gamSize,gamMu) # Creating transition probility matrix
   delta <- solve(t(diag(sum(m))-gamma+1),rep(1,sum(m))) # Getting the probility of the first step - stationary distribution

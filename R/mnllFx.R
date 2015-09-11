@@ -202,7 +202,7 @@ mnllCCRWww <- function(SL, TA, TA_C, missL){
   
   par0 <- cbind(qlogis(rep(g0,each=nL)),qlogis(rep(g0,each=nL)),
                 log(rep(sc0[,1],nA)),log(rep(sc0[,2],nA)),
-                log(sh0[1]),log(sh0[2]),qlogis(r0))
+                log(sh0[1]),log(sh0[2]),r0)
   
   # Creating a matrix that will save the minimiztion results
   mnll <- matrix(NA, ncol=8, nrow=nrow(par0))
@@ -261,11 +261,12 @@ mnllHSMM <- function(SL, TA, TA_C, missL, notMisLoc){
   ########################################
   # Parameters used accros models
   ## size of state aggregates
-  m <- c(20,20)
+  m <- c(10,10)
   
   # Initial parameter for numerical minimasation
   gammaSize0 <- log(matrix(c(3,1,3,3),nrow=2)) # number of step in behaviour
-  gammaMu0 <- log(c(1,3))  # negative binomial state dwell-time mu parameters
+  #gammaMu0 <- log(c(1,3))  # negative binomial state dwell-time mu parameters
+  gammaMu0 <- qlogis(c(0.9,0.9))  # negative binomial prob
   sc0 <- log(matrix(quantile(SL, c(0.15, 0.25, 0.85, 0.75)),ncol=2))
   sh0 <- log(c(1,1)) # Weibull shape parameters
   TA_T <- TA_C[TA>quantile(TA, 0.25) & TA<quantile(TA, 0.75)]

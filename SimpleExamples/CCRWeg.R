@@ -7,7 +7,7 @@ lI <- 0.01
 lE <- 0.001
 kE <- 10
 a <- 1 
-mov <- simmCCRW(500,gII,gEE,lI,lE,kE,a,0.5)
+mov <- simmCCRW(1000,gII,gEE,lI,lE,kE,a,0.5)
 movRes <- movLikelihoods(mov, PRdetails=TRUE)
 movRes
 
@@ -148,10 +148,9 @@ AICcResHSMM - min(AICcResHSMM)
 movResHSMM$CI$HSMM
 
 # Look at the profile likelihood CI
-rangeB <- cbind(movResHSMM$CI$HSMM[,2]*0.95,movResHSMM$CI$HSMM[,3]*1.50)
-rangeB[1,1] <- max(rangeB[1,1], 1e-5)  
-rangeB[2,1] <- max(rangeB[2,1], 1e-20)  
-rangeB[9,2] <- min(rangeB[9,2], 1-1e-20)  
+rangeB <- cbind(movResHSMM$CI$HSMM[,2]*0.50,movResHSMM$CI$HSMM[,3]*2)
+# rangeB[is.nan(rangeB[,1]),1] <- 1e-15
+# rangeB[is.nan(rangeB[,2]),2] <- 1
 ciPL <- ciHSMMpl(mov, movResHSMM$mle$HSMM,
                    rangePar=rangeB, B=15) # slow so only looking at 15 values for this example
 ciPL

@@ -198,8 +198,10 @@ ciHSMM <- function(SL,TA,missL,notMisLoc,mleM){
   
   parF <- list("missL"=missL, "notMisLoc"=notMisLoc, m=c(20,20))
   trans.par <- function(x){
-    x[1:8] <-  log(x[1:8] - .Machine$double.xmin)
-    x[9] <- qlogis(x[9])
+    #x[1:8] <-  log(x[1:8] - .Machine$double.xmin)
+    #x[9] <- qlogis(x[9])
+    x[c(1:2,5:8)] <-  log(x[c(1:2,5:8)] - .Machine$double.xmin)
+    x[c(3:4,9)] <- qlogis(x[c(3:4,9)])
     return(x)
   }
   

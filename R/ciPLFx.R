@@ -136,7 +136,9 @@ CI.PL <- function(SL, TA, parI, parMLE, trans.par, NLL, parF, rang.b, mnll.m, B=
   mnllRes <- vector("list", length=5)
   
   for (i in 1:B){
-    mnllRes <- optim(trans.par(parMLE),NLL,SL=SL,TA=TA, parF=c(parF,rang.parI[i]))
+    mnllRes <- tryCatch(optim(trans.par(parMLE),NLL,SL=SL,TA=TA, parF=c(parF,rang.parI[i])),
+                        error=function(e) list('value'=NA, 
+                                               'message'='Optim returned an error in the CI.PL function'))
     rang.mnll[i] <- mnllRes$value
     mnllRes$message
   }
@@ -373,12 +375,14 @@ ciCCRWwwpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
 
 ciHSMMpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   movD <- movFormat(movltraj, TAc)
-  parF <- list("missL"= movD$missL, "notMisLoc"= movD$notMisLoc, "m"=c(20,20))
+  parF <- list("missL"= movD$missL, "notMisLoc"= movD$notMisLoc, "m"=c(10,10))
   # Some models used transformed parameters in nll
   # Thus trans.par called in an input of CI.PL
   trans.par <- function(x){
-    x[1:8] <- log(x[1:8]) - .Machine$double.xmin
-    x[9] <- qlogis(x[9])
+    #x[1:8] <-  log(x[1:8] - .Machine$double.xmin)
+    #x[9] <- qlogis(x[9])
+    x[c(1:2,5:8)] <-  log(x[c(1:2,5:8)] - .Machine$double.xmin)
+    x[c(3:4,9)] <- qlogis(x[c(3:4,9)])
     return(x)
   }
   
