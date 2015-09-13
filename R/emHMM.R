@@ -123,56 +123,10 @@ HMMww.lalphabeta <- function(SL,TA, missL, sh, sc, rE, gamma, delta, notMisLoc){
   list(la=lalpha, lb=lbeta)
 }
 
-nllHSSM <- function(SL, TA, x, parF){
-  # oarf need missL and notMissLoc and m
-  #####
-  # Parameters to estimate - transforming for unconstrained parameter
-  gamSize <- .Machine$double.xmin + exp(x[1:2])
-  gamMu <- .Machine$double.xmin + exp(x[3:4])
-  scI <- .Machine$double.xmin + exp(x[5])
-  scE <- .Machine$double.xmin + exp(x[6])
-  shI <- .Machine$double.xmin + exp(x[7])
-  shE <- .Machine$double.xmin + exp(x[8])
-  rE <- plogis(x[9]) # Note that kappa can be 0 (uniform)
-  
-  
-  ##
-  # To allow to fix some of the parameters
-  # This is need for the profile likelihood CI
-  if(length(parF)>0){
-    for (i in 1:length(parF)){
-      assign(names(parF[i]),parF[[i]])
-    }
-  }
-  
-  gamma <- gen.Gamma.repar(m,gamSize,gamMu) # Creating transition probility matrix
-  delta <- solve(t(diag(sum(m))-gamma+1),rep(1,sum(m))) # Getting the probility of the first step - stationary distribution
-  
-  # This is the real length of the time series (include missing data)
-  n <- length(SL) + sum(missL-1)
-  
-  obsProb <- matrix(rep(1,sum(m)*n),nrow=n)
-  # Making a matrix with all the probability of observations for each state
-  # Note that for missing location observation probablility is 1
-  obsProb[notMisLoc,1:m[1]] <-  dweibull(SL, shI, scI) * dwrpcauchy(TA, 0, 0)
-  obsProb[notMisLoc,(m[1]+1):sum(m)] <-  dweibull(SL, shE, scE) * dwrpcauchy(TA, 0, rE)
-  
-  foo <- delta  
-  lscale <- 0
-  for (i in 1:n){
-    foo <- foo%*%gamma*obsProb[i,]  
-    sumfoo <- sum(foo)
-    lscale <- lscale+log(sumfoo)
-    foo <- foo/sumfoo
-    #if(any(is.nan(foo))){stop(print(i))}
-  }
-  return(-lscale)
-}
-
 ## for HSMM
-HSMM.lalphabeta <- function(SL,TA, missL, sh, sc, rE, gamSize, gamMu, notMisLoc,m = c(10,10)){
+HSMM.lalphabeta <- function(SL,TA, missL, sh, sc, rE, gamSize, gamPr, notMisLoc,m = c(10,10)){
   
-  gamma <- gen.Gamma.repar(m,gamSize,gamMu) # Creating transition probility matrix
+  gamma <- gen.Gamma.repar(m,gamSize,gamPr) # Creating transition probility matrix
   delta <- solve(t(diag(sum(m))-gamma+1),rep(1,sum(m))) # Getting the probility of the first step - stationary distribution
   
   # This is the real length of the time series (include missing data)
@@ -267,12 +221,12 @@ HMMwiww <- function(SL, TA, missL, sh, sc, rE, gamma, delta, notMisLoc){
 }
 
 # for hsm
-HSMMwi<- function(SL, TA, missL, notMisLoc, gamSize, gamMu, sc, sh, rE, m=c(20,20)){
-  gamma <- gen.Gamma.repar(m,gamSize,gamMu) # Creating transition probility matrix
+HSMMwi<- function(SL, TA, missL, notMisLoc, gamSize, gamPr, sc, sh, rE, m=c(10,10)){
+  gamma <- gen.Gamma.repar(m,gamSize,gamPr) # Creating transition probility matrix
   delta <- solve(t(diag(sum(m))-gamma+1),rep(1,sum(m))) # Getting the probility of the first step - stationary distribution
   # This calculates the weights for the pseudo-residuals
   n <- length(SL) + sum(missL-1)
-  fb <- HSMM.lalphabeta(SL, TA, missL, sh, sc, rE, gamSize, gamMu, notMisLoc)
+  fb <- HSMM.lalphabeta(SL, TA, missL, sh, sc, rE, gamSize, gamPr, notMisLoc)
   la <- fb$la
   lb <- fb$lb
   la <- cbind(log(delta),la)

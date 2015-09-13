@@ -265,19 +265,18 @@ mnllHSMM <- function(SL, TA, TA_C, missL, notMisLoc){
   
   # Initial parameter for numerical minimasation
   gammaSize0 <- log(matrix(c(3,1,3,3),nrow=2)) # number of step in behaviour
-  #gammaMu0 <- log(c(1,3))  # negative binomial state dwell-time mu parameters
-  gammaMu0 <- qlogis(c(0.9,0.9))  # negative binomial prob
+  gammaPr0 <- qlogis(c(0.9,0.9))  # negative binomial prob
   sc0 <- log(matrix(quantile(SL, c(0.15, 0.25, 0.85, 0.75)),ncol=2))
   sh0 <- log(c(1,1)) # Weibull shape parameters
   TA_T <- TA_C[TA>quantile(TA, 0.25) & TA<quantile(TA, 0.75)]
   r0 <- qlogis(max(mle.wrappedcauchy(TA_T, mu=circular(0))$rho,1e-20))
   
-  par0 <- cbind(rep(gammaSize0[,1],2),rep(gammaSize0[,2],2),gammaMu0[1],gammaMu0[2],
+  par0 <- cbind(rep(gammaSize0[,1],2),rep(gammaSize0[,2],2),gammaPr0[1],gammaPr0[2],
                 rep(sc0[,1],each=2),rep(sc0[,2],each=2),sh0[1],sh0[2],r0)
   
   # Creating a matrix that will save the minimiztion results
   mnll <- matrix(NA, ncol=10, nrow=nrow(par0))
-  colnames(mnll) <- c("gSI", "gSE", "gMI", "gME","scI", "scE", "shI", "shE", "rE", "mnll")
+  colnames(mnll) <- c("gSI", "gSE", "gPI", "gPE","scI", "scE", "shI", "shE", "rE", "mnll")
   
   for(i in 1:nrow(par0)){
     mnllRes <- tryCatch(optim(par0[i,],nllHSMM,SL=SL,TA=TA, 
@@ -290,7 +289,7 @@ mnllHSMM <- function(SL, TA, TA_C, missL, notMisLoc){
   mnll <- mnll[which.min(mnll[,'mnll']),]
   if (length(mnll)==0){ # In case no minimization was able to get good values
     mleHSMM <- rep(NA,12)
-    names(mleHSMM) <- c("gSI", "gSE", "gMI", "gME","scI", "scE", "shI", "shE", "rE", "mnll", "AIC", "AICc")
+    names(mleHSMM) <- c("gSI", "gSE", "gPI", "gPE","scI", "scE", "shI", "shE", "rE", "mnll", "AIC", "AICc")
   }else{
     # According to Burnham and Anderson (2002)
     # AIC = 2*nll + 2*k

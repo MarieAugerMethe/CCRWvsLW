@@ -617,10 +617,8 @@ nllHSMM <- function(SL, TA, x, parF){
   # Parameters to estimate - transforming for unconstrained parameter
   gSI <- .Machine$double.xmin + exp(x[1])
   gSE <- .Machine$double.xmin + exp(x[2])
-#   gMI <- .Machine$double.xmin + exp(x[3])
-#   gME <- .Machine$double.xmin + exp(x[4])
-  gMI <- plogis(x[3])
-  gME <- plogis(x[4])
+  gPI <- plogis(x[3])
+  gPE <- plogis(x[4])
   scI <- .Machine$double.xmin + exp(x[5])
   scE <- .Machine$double.xmin + exp(x[6])
   shI <- .Machine$double.xmin + exp(x[7])
@@ -637,7 +635,7 @@ nllHSMM <- function(SL, TA, x, parF){
     }
   }
   
-  gamma <- gen.Gamma.repar(m,c(gSI,gSE),c(gMI,gME)) # Creating transition probility matrix
+  gamma <- gen.Gamma.repar(m,c(gSI,gSE),c(gPI,gPE)) # Creating transition probility matrix
   delta <- solve(t(diag(sum(m))-gamma+1),rep(1,sum(m))) # Getting the probility of the first step - stationary distribution
   
   # This is the real length of the time series (include missing data)
