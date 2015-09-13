@@ -294,7 +294,7 @@ mnllHSMM <- function(SL, TA, TA_C, missL, notMisLoc){
                             parF=list("missL"=missL, "notMisLoc"=notMisLoc, "m"=m)),
                       error=function(e) list("par"=rep(NA,9),'value'=NA))
   if(!is.na(mnllRes$value)){
-    while(mnllRes$value < mnll['mnll']){
+    while(!is.na(mnllRes$value) & mnllRes$value < mnll['mnll']){
       mnll[c(1:2,5:8)] <- .Machine$double.xmin + exp(mnllRes$par[c(1:2,5:8)])
       mnll[c(3:4,9)] <- plogis(mnllRes$par[c(3:4,9)])
       mnll['mnll'] <- mnllRes$value
@@ -302,7 +302,7 @@ mnllHSMM <- function(SL, TA, TA_C, missL, notMisLoc){
                                 parF=list("missL"=missL, "notMisLoc"=notMisLoc, "m"=m)),
                           error=function(e) list("par"=rep(NA,9),'value'=NA))
     }
-    if(mnllRes$value <= mnll['mnll']){
+    if(!is.na(mnllRes$value) & mnllRes$value <= mnll['mnll']){
       mnll[c(1:2,5:8)] <- .Machine$double.xmin + exp(mnllRes$par[c(1:2,5:8)])
       mnll[c(3:4,9)] <- plogis(mnllRes$par[c(3:4,9)])
       mnll['mnll'] <- mnllRes$value  
@@ -369,13 +369,13 @@ mnllHSMMl <- function(SL, TA, TA_C, missL, notMisLoc){
   mnllRes <- tryCatch(optim(transParHSMMl(mnll[1:8]),nllHSMMl,SL=SL,TA=TA, parF=parF),
                       error=function(e) list("par"=rep(NA,8),'value'=NA))
   if(!is.na(mnllRes$value)){
-    while(mnllRes$value < mnll['mnll']){
+    while(!is.na(mnllRes$value) & mnllRes$value < mnll['mnll']){
       mnll[1:8] <- itransParHSMMl(mnllRes$par)
       mnll['mnll'] <- mnllRes$value
       mnllRes <- tryCatch(optim(transParHSMMl(mnll[1:8]),nllHSMMl,SL=SL,TA=TA, parF=parF),
                           error=function(e) list("par"=rep(NA,8),'value'=NA))
     }
-    if(mnllRes$value <= mnll['mnll']){
+    if(!is.na(mnllRes$value) & mnllRes$value <= mnll['mnll']){
       mnll[1:8] <- itransParHSMMl(mnllRes$par)
       mnll['mnll'] <- mnllRes$value
     }  

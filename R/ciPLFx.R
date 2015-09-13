@@ -143,18 +143,20 @@ CI.PL <- function(SL, TA, parI, parMLE, trans.par, NLL, parF, rang.b, mnll.m, B=
         mnllRes2 <- tryCatch(optim(mnllRes$par,NLL,SL=SL,TA=TA, parF=c(parF,rang.parI[i])),
                              error=function(e) list('value'=NA, 
                                                     'message'='Optim returned an error in the CI.PL function'))
-        if(mnllRes2$value < mnllRes$value){mnllRes <- mnllRes2}
+      }else{
+        mnllRes2 <- tryCatch(optim(trans.par(parMLE)*1.1,NLL,SL=SL,TA=TA, parF=c(parF,rang.parI[i])),
+                             error=function(e) list('value'=NA, 
+                                                    'message'='Optim returned an error in the CI.PL function'))
+        mnllRes$value <- mnllRes2$value + 10
+      }
+      while(!is.na(mnllRes2$value) & mnllRes2$value < mnllRes$value){
+        mnllRes <- mnllRes2
         mnllRes2 <- tryCatch(optim(mnllRes$par,NLL,SL=SL,TA=TA, parF=c(parF,rang.parI[i])),
                              error=function(e) list('value'=NA, 
                                                     'message'='Optim returned an error in the CI.PL function'))
-        if(mnllRes2$value < mnllRes$value){mnllRes <- mnllRes2}
-      }else{
-        mnllRes <- tryCatch(optim(trans.par(parMLE)*1.1,NLL,SL=SL,TA=TA, parF=c(parF,rang.parI[i])),
-                            error=function(e) list('value'=NA, 
-                                                   'message'='Optim returned an error in the CI.PL function'))
       }
+      if(!is.na(mnllRes2$value) & mnllRes2$value < mnllRes$value){mnllRes <- mnllRes2}
     }
-    
     rang.mnll[i] <- mnllRes$value
     mnllRes$message
   }

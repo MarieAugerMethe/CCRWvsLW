@@ -167,7 +167,6 @@ round(movResHSMM$pseudoRes$PR["pval",],3)
 movResHSMMl <- movLikelihoods(mov, PRdetails=TRUE, hsl=TRUE)
 
 movResHSMMl$mleMov$HSMMl["AICc"]
-movResHSMM$mleMov$HSMM["AICc"]
 
 # Look paraneters and confidence intervals (no true values since not mode simulated)
 movResHSMMl$CI$HSMMl
