@@ -293,19 +293,22 @@ mnllHSMM <- function(SL, TA, TA_C, missL, notMisLoc){
   mnllRes <- tryCatch(optim(transParHSMM(mnll[1:9]),nllHSMM,SL=SL,TA=TA, 
                             parF=list("missL"=missL, "notMisLoc"=notMisLoc, "m"=m)),
                       error=function(e) list("par"=rep(NA,9),'value'=NA))
-  while(mnllRes$value < mnll['mnll']){
-    mnll[c(1:2,5:8)] <- .Machine$double.xmin + exp(mnllRes$par[c(1:2,5:8)])
-    mnll[c(3:4,9)] <- plogis(mnllRes$par[c(3:4,9)])
-    mnll['mnll'] <- mnllRes$value
-    mnllRes <- tryCatch(optim(transParHSMM(mnll[1:9]),nllHSMM,SL=SL,TA=TA, 
-                              parF=list("missL"=missL, "notMisLoc"=notMisLoc, "m"=m)),
-                        error=function(e) list("par"=rep(NA,9),'value'=NA))
+  if(!is.na(mnllRes$value)){
+    while(mnllRes$value < mnll['mnll']){
+      mnll[c(1:2,5:8)] <- .Machine$double.xmin + exp(mnllRes$par[c(1:2,5:8)])
+      mnll[c(3:4,9)] <- plogis(mnllRes$par[c(3:4,9)])
+      mnll['mnll'] <- mnllRes$value
+      mnllRes <- tryCatch(optim(transParHSMM(mnll[1:9]),nllHSMM,SL=SL,TA=TA, 
+                                parF=list("missL"=missL, "notMisLoc"=notMisLoc, "m"=m)),
+                          error=function(e) list("par"=rep(NA,9),'value'=NA))
+    }
+    if(mnllRes$value <= mnll['mnll']){
+      mnll[c(1:2,5:8)] <- .Machine$double.xmin + exp(mnllRes$par[c(1:2,5:8)])
+      mnll[c(3:4,9)] <- plogis(mnllRes$par[c(3:4,9)])
+      mnll['mnll'] <- mnllRes$value  
+    }  
   }
-  if(mnllRes$value <= mnll['mnll']){
-    mnll[c(1:2,5:8)] <- .Machine$double.xmin + exp(mnllRes$par[c(1:2,5:8)])
-    mnll[c(3:4,9)] <- plogis(mnllRes$par[c(3:4,9)])
-    mnll['mnll'] <- mnllRes$value  
-  }
+  
   
   
   if (length(mnll)==0){ # In case no minimization was able to get good values
