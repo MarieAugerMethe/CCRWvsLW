@@ -148,9 +148,9 @@ AICcResHSMM - min(AICcResHSMM)
 movResHSMM$CI$HSMM
 
 # Look at the profile likelihood CI
-rangeB <- cbind(movResHSMM$CI$HSMM[,2]*0.50,movResHSMM$CI$HSMM[,3]*2)
-# rangeB[is.nan(rangeB[,1]),1] <- 1e-15
-# rangeB[is.nan(rangeB[,2]),2] <- 1
+rangeB <- cbind(movResHSMM$CI$HSMM[,2]*0.5,movResHSMM$CI$HSMM[,3]*1.3)
+rangeB[,1][is.nan(rangeB[,1])] <- (movResHSMM$mleMov$HSMM[1:9]*0.8)[is.nan(rangeB[,1])]
+rangeB[,2][is.nan(rangeB[,2])] <- (movResHSMM$mleMov$HSMM[1:9]*1.2)[is.nan(rangeB[,2])]
 ciPL <- ciHSMMpl(mov, movResHSMM$mle$HSMM,
                    rangePar=rangeB, B=15) # slow so only looking at 15 values for this example
 ciPL

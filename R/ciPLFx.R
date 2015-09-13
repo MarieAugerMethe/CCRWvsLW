@@ -113,7 +113,7 @@ CI.PL.EM <- function(SL, TA, parI, parMLE, missL, parF, rang.b, mnll.m, notMisLo
 }
 
 #######################################
-CI.PL <- function(SL, TA, parI, parMLE, trans.par, NLL, parF, rang.b, mnll.m, B=100, graph=TRUE){
+CI.PL <- function(SL, TA, parI, parMLE, trans.par, NLL, parF, rang.b, mnll.m, B=100, graph=TRUE, extOpt =FALSE){
   
   # Function inputs
   # SL: step length
@@ -124,7 +124,7 @@ CI.PL <- function(SL, TA, parI, parMLE, trans.par, NLL, parF, rang.b, mnll.m, B=
   # B: number of values of parI for which the min neg LL is estimated
   # rang.b: range boundaries for parI
   # mnll.m: min neg LL of the model when all parameters are minimised
-
+  
   mnll_i <- floor(B/2)
   rang.parI <- numeric(B)
   rang.parI[1:mnll_i] <- seq(rang.b[1],parI,length=mnll_i)
@@ -133,12 +133,28 @@ CI.PL <- function(SL, TA, parI, parMLE, trans.par, NLL, parF, rang.b, mnll.m, B=
   
   # Set memory for loop results
   rang.mnll <- numeric(B)
-  mnllRes <- vector("list", length=5)
   
   for (i in 1:B){
     mnllRes <- tryCatch(optim(trans.par(parMLE),NLL,SL=SL,TA=TA, parF=c(parF,rang.parI[i])),
                         error=function(e) list('value'=NA, 
                                                'message'='Optim returned an error in the CI.PL function'))
+    if(extOpt){
+      if(!is.na(mnllRes$value)){
+        mnllRes2 <- tryCatch(optim(mnllRes$par,NLL,SL=SL,TA=TA, parF=c(parF,rang.parI[i])),
+                             error=function(e) list('value'=NA, 
+                                                    'message'='Optim returned an error in the CI.PL function'))
+        if(mnllRes2$value < mnllRes$value){mnllRes <- mnllRes2}
+        mnllRes2 <- tryCatch(optim(mnllRes$par,NLL,SL=SL,TA=TA, parF=c(parF,rang.parI[i])),
+                             error=function(e) list('value'=NA, 
+                                                    'message'='Optim returned an error in the CI.PL function'))
+        if(mnllRes2$value < mnllRes$value){mnllRes <- mnllRes2}
+      }else{
+        mnllRes <- tryCatch(optim(trans.par(parMLE)*1.1,NLL,SL=SL,TA=TA, parF=c(parF,rang.parI[i])),
+                            error=function(e) list('value'=NA, 
+                                                   'message'='Optim returned an error in the CI.PL function'))
+      }
+    }
+    
     rang.mnll[i] <- mnllRes$value
     mnllRes$message
   }
@@ -376,15 +392,6 @@ ciCCRWwwpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
 ciHSMMpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   movD <- movFormat(movltraj, TAc)
   parF <- list("missL"= movD$missL, "notMisLoc"= movD$notMisLoc, "m"=c(10,10))
-  # Some models used transformed parameters in nll
-  # Thus trans.par called in an input of CI.PL
-  trans.par <- function(x){
-    #x[1:8] <-  log(x[1:8] - .Machine$double.xmin)
-    #x[9] <- qlogis(x[9])
-    x[c(1:2,5:8)] <-  log(x[c(1:2,5:8)] - .Machine$double.xmin)
-    x[c(3:4,9)] <- qlogis(x[c(3:4,9)])
-    return(x)
-  }
   
   CI <- matrix(NA,nrow=9,ncol=3)
   rownames(CI) <- names(mleM[1:9])
@@ -396,8 +403,8 @@ ciHSMMpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   }
   
   for(i in 1:9){
-    CI[i,2:3] <- CI.PL(movD$SL, movD$TA, mleM[i], mleM[1:9], trans.par, nllHSMM, parF, rangePar[i,],
-                       mleM['mnll'], B=B, graph)  
+    CI[i,2:3] <- CI.PL(movD$SL, movD$TA, mleM[i], mleM[1:9], transParHSMM, nllHSMM, parF, rangePar[i,],
+                       mleM['mnll'], B=B, graph, extOpt = TRUE) 
   }
   
   return(CI)
