@@ -158,3 +158,26 @@ ciPL
 # Look at test of absolute fit
 round(movResHSMM$pseudoRes$PR["pval",],3)
 # Significantly different because it's a different model
+
+
+############################
+# Using HSMM but with one less parameter (gPI=gPE)
+# Still using weibull and wrapped cauchy instead of exponential and von mises distributions
+# This is numerically minimise automatically (no option for EM algorithm)
+movResHSMMl <- movLikelihoods(mov, PRdetails=TRUE, hsl=TRUE)
+
+movResHSMMl$mleMov$HSMMl["AICc"]
+movResHSMM$mleMov$HSMM["AICc"]
+
+# Look paraneters and confidence intervals (no true values since not mode simulated)
+movResHSMMl$CI$HSMMl
+
+# Look at the profile likelihood CI
+rangeB <- cbind(movResHSMMl$CI$HSMMl[,2]*0.5,movResHSMMl$CI$HSMMl[,3]*1.3)
+ciPL <- ciHSMMlpl(mov, movResHSMMl$mle$HSMMl,
+                 rangePar=rangeB, B=15) # slow so only looking at 15 values for this example
+ciPL
+
+# Look at test of absolute fit
+round(movResHSMMl$pseudoRes$PR["pval",],3)
+# Significantly different because it's a different model

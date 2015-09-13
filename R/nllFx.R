@@ -612,7 +612,7 @@ gen.Gamma.repar <- function(m,pSize,pMu){
 # Neg. log likelihood functions
 
 nllHSMM <- function(SL, TA, x, parF){
-  # oarf need missL and notMissLoc and m
+  # parf need missL and notMissLoc and m
   #####
   # Parameters to estimate - transforming for unconstrained parameter
   gSI <- .Machine$double.xmin + exp(x[1])
@@ -647,6 +647,53 @@ nllHSMM <- function(SL, TA, x, parF){
   obsProb[notMisLoc,1:m[1]] <-  dweibull(SL, shI, scI) * dwrpcauchy(TA, 0, 0)
   obsProb[notMisLoc,(m[1]+1):sum(m)] <-  dweibull(SL, shE, scE) * dwrpcauchy(TA, 0, rE)
 
+  foo <- delta  
+  lscale <- 0
+  for (i in 1:n){
+    foo <- foo%*%gamma*obsProb[i,]  
+    sumfoo <- sum(foo)
+    lscale <- lscale+log(sumfoo)
+    foo <- foo/sumfoo
+    #if(any(is.nan(foo))){stop(print(i))}
+  }
+  return(-lscale)
+}
+
+nllHSMMl <- function(SL, TA, x, parF){
+  # parf need missL and notMissLoc and m
+  #####
+  # Parameters to estimate - transforming for unconstrained parameter
+  gSI <- .Machine$double.xmin + exp(x[1])
+  gSE <- .Machine$double.xmin + exp(x[2])
+  gP <- plogis(x[3])
+  scI <- .Machine$double.xmin + exp(x[4])
+  scE <- .Machine$double.xmin + exp(x[5])
+  shI <- .Machine$double.xmin + exp(x[6])
+  shE <- .Machine$double.xmin + exp(x[7])
+  rE <- plogis(x[8]) # Note that kappa can be 0 (uniform)
+  
+  
+  ##
+  # To allow to fix some of the parameters
+  # This is need for the profile likelihood CI
+  if(length(parF)>0){
+    for (i in 1:length(parF)){
+      assign(names(parF[i]),parF[[i]])
+    }
+  }
+  
+  gamma <- gen.Gamma.repar(m,c(gSI,gSE),c(gP,gP)) # Creating transition probility matrix
+  delta <- solve(t(diag(sum(m))-gamma+1),rep(1,sum(m))) # Getting the probility of the first step - stationary distribution
+  
+  # This is the real length of the time series (include missing data)
+  n <- length(SL) + sum(missL-1)
+  
+  obsProb <- matrix(rep(1,sum(m)*n),nrow=n)
+  # Making a matrix with all the probability of observations for each state
+  # Note that for missing location observation probablility is 1
+  obsProb[notMisLoc,1:m[1]] <-  dweibull(SL, shI, scI) * dwrpcauchy(TA, 0, 0)
+  obsProb[notMisLoc,(m[1]+1):sum(m)] <-  dweibull(SL, shE, scE) * dwrpcauchy(TA, 0, rE)
+  
   foo <- delta  
   lscale <- 0
   for (i in 1:n){

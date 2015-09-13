@@ -3,7 +3,7 @@
 # Date created: March 28, 2011
 # Updated: April 3, 2013
 
-movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=TRUE, dn=FALSE, ww=FALSE, hs=FALSE){
+movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=TRUE, dn=FALSE, ww=FALSE, hs=FALSE, hsl=FALSE){
   
   #######################################
   # This script estimates the parameters and calculates the AIC of multiple movement models:
@@ -99,6 +99,11 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=T
     mleMov$HSMM <- mleHSMM
   }
   
+  if(hsl){
+    mleHSMMl <- mnllHSMMl(SL, TA, TA_C, missL, notMisLoc)  
+    mleMov$HSMMl <- mleHSMMl
+  }
+  
   
   ######################
   # Calculating the CI
@@ -142,10 +147,14 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=T
     CI$HSMM <- ciHSMM(SL,TA,missL,notMisLoc,mleHSMM)
   }
   
+  if(hsl){
+    CI$HSMMl <- ciHSMMl(SL,TA,missL,notMisLoc,mleHSMMl)
+  }
+  
   #######
   # Test of absolute fit
 	pseudoRes <- pseudo(SL, TA_C, TA, SLmin, SLmax, missL, notMisLoc, n,
-                      mleMov, PRdetails, graph, dn=dn, ww=ww, hs=hs)
+                      mleMov, PRdetails, graph, dn=dn, ww=ww, hs=hs, hsl=hsl)
   
   
   

@@ -150,7 +150,7 @@ pwrcauchy <- function(TA,mu,rho){
 
 # function that test the absolut fit
 
-pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,graph,Uinfo=FALSE,dn=FALSE, ww=FALSE, hs=FALSE){
+pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,graph,Uinfo=FALSE,dn=FALSE, ww=FALSE, hs=FALSE, hsl=FALSE){
   
 	##########################################################
 	# Pseudo residuals
@@ -248,6 +248,19 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
     colnames(Z)[ncol(Z)] <- "TA_HSMM"
   }
 
+  
+  if(hsl){
+    whs <- HSMMwi(SL, TA, missL, notMisLoc, mleMov$HSMMl[1:2], mleMov$HSMMl[rep(3,2)], mleMov$HSMMl[4:5], mleMov$HSMMl[6:7], mleMov$HSMMl[8])
+    U_SL_HSMMl <- whs[1,notMisLoc] * pweibull(SL,mleMov$HSMMl[6],mleMov$HSMMl[4]) +
+      whs[2,notMisLoc] * pweibull(SL,mleMov$HSMMl[7],mleMov$HSMMl[5])
+    
+    U_TA_HSMMl <- whs[1,notMisLoc] * pwrcauchy(TA, 0, 0) +
+      whs[2,notMisLoc] * pwrcauchy(TA, 0, mleMov$HSMMl[8])
+    Z <- cbind(Z, pseudo.u.test(U_SL_HSMMl, 4, n, graphL[8], "SL"))
+    colnames(Z)[ncol(Z)] <- "SL_HSMMl"
+    Z <- cbind(Z, pseudo.u.test(U_TA_HSMMl, 1, n, graphL[8], "TA"))
+    colnames(Z)[ncol(Z)] <- "TA_HSMMl"
+  }
   #####
   # SL
   
@@ -332,6 +345,12 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
 	if(hs){
 	  PR <- cbind(PR, t(combP(Z[2,"SL_HSMM"],Z[2,"TA_HSMM"])))
 	  colnames(PR)[ncol(PR)] <- "HSMM"
+	}
+	
+	
+	if(hsl){
+	  PR <- cbind(PR, t(combP(Z[2,"SL_HSMMl"],Z[2,"TA_HSMMl"])))
+	  colnames(PR)[ncol(PR)] <- "HSMMl"
 	}
 
   if(PRdetails & Uinfo){

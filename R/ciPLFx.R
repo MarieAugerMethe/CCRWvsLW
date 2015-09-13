@@ -335,15 +335,7 @@ ciCCRWpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
 ciCCRWdnpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   movD <- movFormat(movltraj, TAc)
   parF <- list('SLmin'= movD$SLmin, 'missL' = movD$missL)
-  # Some models used transformed parameters in nll
-  # Thus trans.par called in an input of CI.PL
-  trans.par <- function(x){
-    x[1:2] <- qlogis(x[1:2])
-    x[3:4] <- log(x[3:4]) - .Machine$double.xmin
-    x[5] <- log(x[5]) # Note that kappa can be 0 (uniform)
-    return(x)
-  }
-  
+
   CI <- matrix(NA,nrow=5,ncol=3)
   rownames(CI) <- names(mleM[1:5])
   colnames(CI) <- c("estimate","L95CI", "U95CI")
@@ -354,7 +346,7 @@ ciCCRWdnpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   }
   
   for(i in 1:5){
-    CI[i,2:3] <- CI.PL(movD$SL, movD$TA, mleM[i], mleM[1:5], trans.par, nllCCRWdn, parF, rangePar[i,],
+    CI[i,2:3] <- CI.PL(movD$SL, movD$TA, mleM[i], mleM[1:5], transParCCRWdn, nllCCRWdn, parF, rangePar[i,],
                        mleM['mnll'], B=B, graph)
   }
   return(CI)
@@ -363,14 +355,6 @@ ciCCRWdnpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
 ciCCRWwwpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   movD <- movFormat(movltraj, TAc)
   parF <- list('missL' = movD$missL)
-  # Some models used transformed parameters in nll
-  # Thus trans.par called in an input of CI.PL
-  trans.par <- function(x){
-    x[1:2] <- qlogis(x[1:2])
-    x[3:6] <- log(x[3:6]) - .Machine$double.xmin
-    x[7] <- qlogis(x[7])
-    return(x)
-  }
   
   CI <- matrix(NA,nrow=7,ncol=3)
   rownames(CI) <- names(mleM[1:7])
@@ -382,7 +366,7 @@ ciCCRWwwpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   }
   
   for(i in 1:7){
-    CI[i,2:3] <- CI.PL(movD$SL, movD$TA, mleM[i], mleM[1:7], trans.par, nllCCRWww, parF, rangePar[i,],
+    CI[i,2:3] <- CI.PL(movD$SL, movD$TA, mleM[i], mleM[1:7], transParCCRWww, nllCCRWww, parF, rangePar[i,],
                        mleM['mnll'], B=B, graph)  
   }
   
@@ -409,6 +393,30 @@ ciHSMMpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   
   return(CI)
 }
+
+# HSMM with gPI=gPE
+
+ciHSMMlpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0, nPar=8){
+  movD <- movFormat(movltraj, TAc)
+  parF <- list("missL"= movD$missL, "notMisLoc"= movD$notMisLoc, "m"=c(10,10))
+  
+  CI <- matrix(NA,nrow=nPar,ncol=3)
+  rownames(CI) <- names(mleM[1:nPar])
+  colnames(CI) <- c("estimate","L95CI", "U95CI")
+  CI[,1] <- mleM[1:nPar]
+  
+  if(graph==TRUE){
+    layout(matrix(1:nPar, nrow=1))
+  }
+  
+  for(i in 1:nPar){
+    CI[i,2:3] <- CI.PL(movD$SL, movD$TA, mleM[i], mleM[1:nPar], transParHSMMl, nllHSMMl, parF, rangePar[i,],
+                       mleM['mnll'], B=B, graph, extOpt = TRUE) 
+  }
+  
+  return(CI)
+}
+
 
 
 #######################################
@@ -458,9 +466,6 @@ ciTLWpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   notMisLoc <- movD$notMisLoc
   
   parF <- list('SLmin'=SLmin,'SLmax'=SLmax)
-  # Some models used transformed parameters in nll
-  # Thus trans.par called in an input of CI.slice
-  trans.par <- function(x){x}
   
   # The PL likelihood is more a slice in this case
   # since the other parameter estimated: a
@@ -470,7 +475,7 @@ ciTLWpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   colnames(CI) <- c("estimate","L95CI_PL", "U95CI_PL")
   
   CI[,1] <- mleM[1]
-  CI[,2:3] <- CI.Slice(SL, TA, mleM[1], parF, trans.par, nllTLW, rangePar, mleM['mnll'], B, graph)
+  CI[,2:3] <- CI.Slice(SL, TA, mleM[1], parF, transParx, nllTLW, rangePar, mleM['mnll'], B, graph)
   
   return(CI)
 }
@@ -502,9 +507,6 @@ ciEpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   notMisLoc <- movD$notMisLoc
   
   parF <- list('SLmin'=SLmin)
-  # Some models used transformed parameters in nll
-  # Thus trans.par called in an input of CI.slice
-  trans.par <- function(x){x}
   
   # The PL likelihood is more a slice in this case
   # since the other parameter estimated: a
@@ -514,11 +516,10 @@ ciEpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   colnames(CI) <- c("estimate","L95CI_PL", "U95CI_PL")
   
   CI[,1] <- mleM[1]
-  CI[,2:3] <- CI.Slice(SL, TA, mleM[1], parF, trans.par, nllBW, rangePar, mleM['mnll'], B, graph)
+  CI[,2:3] <- CI.Slice(SL, TA, mleM[1], parF, transParx, nllBW, rangePar, mleM['mnll'], B, graph)
   
   return(CI)
 }
-
 
 #######################################
 # K
@@ -536,10 +537,7 @@ ciKpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   notMisLoc <- movD$notMisLoc
   
   parF <- list('SLmin'=SLmin, 'lambda'=mleM[1])
-  # Some models used transformed parameters in nll
-  # Thus trans.par called in an input of CI.slice
-  trans.par <- function(x){x}
-  
+
   # The PL likelihood is more a slice in this case
   # since the other parameter estimated: a
   # is fixed to its value
@@ -548,7 +546,7 @@ ciKpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   colnames(CI) <- c("estimate","L95CI_PL", "U95CI_PL")
   
   CI[,1] <- mleM[2]
-  CI[,2:3] <- CI.Slice(SL, TA, mleM[2], parF, trans.par, nllCRW, rangePar, mleM['mnll'], B, graph)
+  CI[,2:3] <- CI.Slice(SL, TA, mleM[2], parF, transParx, nllCRW, rangePar, mleM['mnll'], B, graph)
   
   return(CI)
 }
@@ -569,15 +567,13 @@ ciTEpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   notMisLoc <- movD$notMisLoc
   
   parF <- list('SLmin'=SLmin,'SLmax'=SLmax)
-  # TBW uses a transformation in nll.TWB
-  trans.par <- function(x){log(x)}
   
   CI <- matrix(NA, nrow=1, ncol=3)
   rownames(CI) <- names(mleM[1])
   colnames(CI) <- c("estimate","L95CI_PL", "U95CI_PL")
   
   CI[,1] <- mleM[1]
-  CI[,2:3] <- CI.Slice(SL, TA, mleM[1], parF, trans.par, nllTBW, rangePar, mleM['mnll'], B, graph)  
+  CI[,2:3] <- CI.Slice(SL, TA, mleM[1], parF, transParTBW, nllTBW, rangePar, mleM['mnll'], B, graph)  
 
   return(CI)
 }

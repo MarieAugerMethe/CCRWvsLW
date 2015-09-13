@@ -1,7 +1,7 @@
 #######################################
 # Created By: Marie Auger-Methe
 # Date created: November 21, 2011
-# Updated: April 3, 2013
+# Updated: Sept 13, 2015
 
 # This script contains the functions for computing the quadratic approximation CI (using the Hessian).
 # The fx for the quad. app. CI CI.Hessian() can be used directly
@@ -75,14 +75,6 @@ ciCCRW <- function(SL,TA,SLmin,missL,notMisLoc,mleM){
   CI[,1] <- mleM[1:5]
   
 	parF <- list('SLmin'=SLmin)
-	trans.par <- function(x){
-		x[1] <- qlogis(x[1])
-		x[2] <- qlogis(x[2])
-		x[3] <- log(x[3] - .Machine$double.xmin)
-		x[4] <- log(x[4] - .Machine$double.xmin)
-		x[5] <- log(x[5])
-		return(x)
-	}
 
 	# According to Zucchini and MacDonald (2009)
 	M <- diag(c(
@@ -93,13 +85,10 @@ ciCCRW <- function(SL,TA,SLmin,missL,notMisLoc,mleM){
 	# Note that although I put places for the deltas
 	# I won't get any CIs
 
-
-
-
   if(any(is.na(mleM[1:7]))){
 	  warning("The EM-algorithm gives NA values for the parameters")
 	}else{
-	  CI[,2:3] <- CI.Hessian(SL,TA, CI[,1], trans.par, M,
+	  CI[,2:3] <- CI.Hessian(SL,TA, CI[,1], transParCCRW, M,
 	                         parF=c(parF,mleM[6],mleM[7],list("missL"=missL)), nllCCRW)
 	}
   
@@ -119,14 +108,6 @@ ciCCRWdn <- function(SL,TA,SLmin,missL,mleM){
   CI[,1] <- mleM[1:5]
   
   parF <- list('SLmin'=SLmin,"missL"=missL)
-  trans.par <- function(x){
-    x[1] <- qlogis(x[1])
-    x[2] <- qlogis(x[2])
-    x[3] <- log(x[3] - .Machine$double.xmin)
-    x[4] <- log(x[4] - .Machine$double.xmin)
-    x[5] <- log(x[5])
-    return(x)
-  }
   
   # According to Zucchini and MacDonald (2009)
   M <- diag(c(
@@ -137,7 +118,7 @@ ciCCRWdn <- function(SL,TA,SLmin,missL,mleM){
   if(any(is.na(mleM[1:7]))){
     warning("The optim return NA values for the parameters, so no CI calculated")
   }else{
-    CI[,2:3] <- CI.Hessian(SL,TA, CI[,1], trans.par, M,
+    CI[,2:3] <- CI.Hessian(SL,TA, CI[,1], transParCCRWdn, M,
                            parF=parF, nllCCRWdn)
   }
   
@@ -157,16 +138,6 @@ ciCCRWww <- function(SL,TA,missL,mleM){
   CI[,1] <- mleM[1:7]
   
   parF <- list("missL"=missL)
-  trans.par <- function(x){
-    x[1] <- qlogis(x[1])
-    x[2] <- qlogis(x[2])
-    x[3] <- log(x[3] - .Machine$double.xmin)
-    x[4] <- log(x[4] - .Machine$double.xmin)
-    x[5] <- log(x[5] - .Machine$double.xmin)
-    x[6] <- log(x[6] - .Machine$double.xmin)
-    x[7] <- qlogis(x[7])
-    return(x)
-  }
   
   M <- diag(c(
     CI[1,1]*(1-CI[1,1]),
@@ -176,7 +147,7 @@ ciCCRWww <- function(SL,TA,missL,mleM){
   if(any(is.na(mleM[1:7]))){
     warning("The optim return NA values for the parameters, so no CI calculated")
   }else{
-    CI[,2:3] <- CI.Hessian(SL,TA, CI[,1], trans.par, M,
+    CI[,2:3] <- CI.Hessian(SL,TA, CI[,1], transParCCRWww, M,
                            parF=parF, nllCCRWww)
   }
   
@@ -186,12 +157,6 @@ ciCCRWww <- function(SL,TA,missL,mleM){
 
 #######################################
 # HSMM - semi hidden mark model with wrapped Cauchy and weibull
-
-transParHSMM <- function(x){
-  x[c(1:2,5:8)] <-  log(x[c(1:2,5:8)] - .Machine$double.xmin)
-  x[c(3:4,9)] <- qlogis(x[c(3:4,9)])
-  return(x)
-}
 
 ciHSMM <- function(SL,TA,missL,notMisLoc,mleM){
   # Table for the CI
@@ -216,6 +181,31 @@ ciHSMM <- function(SL,TA,missL,notMisLoc,mleM){
   return(CI)
 }
 
+# HSMM with gPI=gPE
+
+ciHSMMl <- function(SL,TA,missL,notMisLoc,mleM){
+  # Table for the CI
+  CI <- matrix(NA, nrow=8, ncol=3)
+  rownames(CI) <- names(mleM[1:8])
+  colnames(CI) <- c("estimate","L95CI", "U95CI")
+  
+  # Parameter estimates
+  CI[,1] <- mleM[1:8]
+  
+  parF <- list("missL"=missL, "notMisLoc"=notMisLoc, m=c(10,10))
+  
+  M <- diag(CI[1:8,1])
+  
+  if(any(is.na(mleM[1:8]))){
+    warning("The optim return NA values for the parameters, so no CI calculated")
+  }else{
+    CI[,2:3] <- tryCatch(CI.Hessian(SL,TA, CI[,1], transParHSMMl, M,
+                                    parF=parF, nllHSMMl), error=function(e) c(NA,NA))
+  }
+  
+  return(CI)
+}
+
 
 #######################################
 # LW
@@ -228,11 +218,6 @@ ciLW <- function(SL,TA,SLmin,mleM){
   
   # Parameter estimate
   CI[,1] <- mleM[1]
-  
-	parF <- list('SLmin'=SLmin)
-	# Some models used transformed parameters in nll
-	# Thus trans.par called in an input of CI.slice
-	trans.par <- function(x){x}
 
 	# Similar to using the hessian
 	# we can use the second derivate of the likelihood
@@ -261,11 +246,6 @@ ciTLW <- function(SL,TA,SLmin,SLmax,mleM){
   
   # Parameter estimate
   CI[,1] <- mleM[1]
-  
-	parF <- list('SLmin'=SLmin,'SLmax'=SLmax)
-	# Some models used transformed parameters in nll
-	# Thus trans.par called in an input of CI.slice
-	trans.par <- function(x){x}
 
 	# Similar to using the hessian
 	# we can use the second derivate of the likelihood
@@ -320,8 +300,6 @@ ciE <- function(SL,TA,SLmin,mleM){
   
   # Parameter estimate
   CI[,1] <- mleM[1]
-	
-  parF <- list('SLmin'=SLmin)
 
 	# Similar to using the hessian
 	# we can use the second derivate of the likelihood
@@ -351,8 +329,6 @@ ciK <- function(SL,TA,SLmin,mleM,graph=TRUE){
   
   CI[1] <- mleM[2]
 
-  parF <- list('SLmin'=SLmin, 'lambda'=mleM[1])
-	
 	# Similar to using the hessian
 	# we can use the second derivate of the likelihood
 	# to estimate the normal approximation of the C.I.
@@ -389,8 +365,6 @@ ciTE <- function(SL,TA,SLmin,SLmax,mleM){
   # Parameter estimate
   CI[1] <- mleM[1]
   
-	parF <- list('SLmin'=SLmin,'SLmax'=SLmax)
-
 	# Similar to using the hessian
 	# we can use the second derivate of the likelihood
 	# to estimate the normal approximation of the C.I.

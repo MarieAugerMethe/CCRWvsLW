@@ -125,7 +125,7 @@ mnllCCRWdn <- function(SL, TA, TA_C, missL, SLmin){
   TA_T <- TA_C[TA>quantile(TA, 0.25) & TA<quantile(TA, 0.75)]
   k0 <- mle.vonmises(TA_T, mu=circular(0))$kappa
   
-  par0 <- cbind(qlogis(rep(g0,each=nL)),qlogis(rep(g0,each=nL)),log(rep(l0[,1],nA)),log(rep(l0[,2],nA)),log(k0))
+  par0 <- cbind(rep(g0,each=nL),rep(g0,each=nL),rep(l0[,1],nA),rep(l0[,2],nA),k0)
   
   # Creating a matrix that will save the minimiztion results
   mnll <- matrix(NA, ncol=7, nrow=nrow(par0))
@@ -133,7 +133,7 @@ mnllCCRWdn <- function(SL, TA, TA_C, missL, SLmin){
   mnll[,'a'] <- SLmin
   
   for (i in 1:nrow(par0)){
-    mnllRes <- tryCatch(optim(par0[i,],nllCCRWdn,SL=SL,TA=TA, parF=list(SLmin=min(SL),missL=missL)),
+    mnllRes <- tryCatch(optim(transParCCRWdn(par0[i,]),nllCCRWdn,SL=SL,TA=TA, parF=list(SLmin=min(SL),missL=missL)),
                         error=function(e) list(par=rep(NA,5),'value'=NA))
     mnll[i,1:2] <- plogis(mnllRes$par[1:2])
     mnll[i,3:4] <- .Machine$double.xmin + exp(mnllRes$par[3:4])
@@ -198,18 +198,18 @@ mnllCCRWww <- function(SL, TA, TA_C, missL){
   # the stationary distribution of the behaviours are 0.5.
   # Therefore k0 can be based on the 0.5 quantile
   TA_T <- TA_C[TA>quantile(TA, 0.25) & TA<quantile(TA, 0.75)]
-  r0 <- qlogis(max(mle.wrappedcauchy(TA_T, mu=circular(0))$rho,1e-20))
+  r0 <- max(mle.wrappedcauchy(TA_T, mu=circular(0))$rho,1e-20)
   
-  par0 <- cbind(qlogis(rep(g0,each=nL)),qlogis(rep(g0,each=nL)),
-                log(rep(sc0[,1],nA)),log(rep(sc0[,2],nA)),
-                log(sh0[1]),log(sh0[2]),r0)
+  par0 <- cbind(rep(g0,each=nL), rep(g0,each=nL),
+                rep(sc0[,1],nA), rep(sc0[,2],nA),
+                sh0[1],sh0[2],r0)
   
   # Creating a matrix that will save the minimiztion results
   mnll <- matrix(NA, ncol=8, nrow=nrow(par0))
   colnames(mnll) <- c("gII", "gEE", "scI", "scE", "shI", "shE", "rE", "mnll")
   
   for (i in 1:nrow(par0)){
-    mnllRes <- tryCatch(optim(par0[i,],nllCCRWww,SL=SL,TA=TA, parF=list(missL=missL)),
+    mnllRes <- tryCatch(optim(transParCCRWww(par0[i,]),nllCCRWww,SL=SL,TA=TA, parF=list(missL=missL)),
                         error=function(e) list(par=rep(NA,7),'value'=NA))
     mnll[i,1:2] <- plogis(mnllRes$par[1:2])
     mnll[i,3:6] <- .Machine$double.xmin + exp(mnllRes$par[3:6])
@@ -254,7 +254,7 @@ mnllCCRWww <- function(SL, TA, TA_C, missL){
 }
 
 #######
-# Weibull and wrapped Cauchy hiden semi markoce model CCRW
+# Weibull and wrapped Cauchy hiden semi markov model CCRW
 
 # Function that runs the numerical maximization of the above likelihood function and returns the results
 mnllHSMM <- function(SL, TA, TA_C, missL, notMisLoc){
@@ -328,6 +328,76 @@ mnllHSMM <- function(SL, TA, TA_C, missL, notMisLoc){
   return(mleHSMM)
 }
 
+
+################################
+# HSMM - but with par gPI = gPE
+
+# Function that runs the numerical maximization of the above likelihood function and returns the results
+mnllHSMMl <- function(SL, TA, TA_C, missL, notMisLoc){
+  ########################################
+  # Parameters used accros models
+  # size of state aggregates
+  m <- c(10,10)
+  parF <- list("missL"=missL, "notMisLoc"=notMisLoc, "m"=m)
+  
+  # Initial parameter for numerical minimasation
+  gammaSize0 <- matrix(c(3,1,3,3),nrow=2) # number of step in behaviour
+  gammaPr0 <- 0.9  # negative binomial prob
+  sc0 <- matrix(quantile(SL, c(0.15, 0.25, 0.85, 0.75)),ncol=2)
+  sh0 <- c(1,1) # Weibull shape parameters
+  TA_T <- TA_C[TA>quantile(TA, 0.25) & TA<quantile(TA, 0.75)]
+  r0 <- max(mle.wrappedcauchy(TA_T, mu=circular(0))$rho,1e-20)
+  
+  par0 <- cbind(rep(gammaSize0[,1],2),rep(gammaSize0[,2],2),gammaPr0,
+                rep(sc0[,1],each=2),rep(sc0[,2],each=2),sh0[1],sh0[2],r0)
+  
+  
+  # Creating a matrix that will save the minimiztion results
+  mnll <- matrix(NA, ncol=9, nrow=nrow(par0))
+  colnames(mnll) <- c("gSI", "gSE", "gP","scI", "scE", "shI", "shE", "rE", "mnll")
+  
+  for(i in 1:nrow(par0)){
+    mnllRes <- tryCatch(optim(transParHSMMl(par0[i,]), nllHSMMl, SL=SL, TA=TA, parF=parF),
+                        error=function(e) list("par"=rep(NA,8),'value'=NA))
+    mnll[i,1:8] <- itransParHSMMl(mnllRes$par)
+    mnll[i,'mnll'] <- mnllRes$value
+  }
+  mnll <- mnll[which.min(mnll[,'mnll']),]
+  
+  #########################
+  # This HSMM is hard to minimise, so add extra step for minimisation
+  mnllRes <- tryCatch(optim(transParHSMMl(mnll[1:8]),nllHSMMl,SL=SL,TA=TA, parF=parF),
+                      error=function(e) list("par"=rep(NA,8),'value'=NA))
+  if(!is.na(mnllRes$value)){
+    while(mnllRes$value < mnll['mnll']){
+      mnll[1:8] <- itransParHSMMl(mnllRes$par)
+      mnll['mnll'] <- mnllRes$value
+      mnllRes <- tryCatch(optim(transParHSMMl(mnll[1:8]),nllHSMMl,SL=SL,TA=TA, parF=parF),
+                          error=function(e) list("par"=rep(NA,8),'value'=NA))
+    }
+    if(mnllRes$value <= mnll['mnll']){
+      mnll[1:8] <- itransParHSMMl(mnllRes$par)
+      mnll['mnll'] <- mnllRes$value
+    }  
+  }
+  
+  
+  if (length(mnll)==0){ # In case no minimization was able to get good values
+    mleHSMM <- rep(NA,11)
+    names(mleHSMM) <- c("gSI", "gSE", "gP","scI", "scE", "shI", "shE", "rE", "mnll", "AIC", "AICc")
+  }else{
+    # According to Burnham and Anderson (2002)
+    # AIC = 2*nll + 2*k
+    # AICc = AIC + 2*k*(k+1)/(n-K-1)
+    AICCCRW <- matrix(NA, ncol=2)
+    k <- length(par0[1,])
+    names(AICCCRW) <- c("AIC", "AICc")
+    AICCCRW[,1] <- 2*k + 2*mnll["mnll"]
+    AICCCRW[,2] <- AICCCRW[,1] + (2*k*(k+1))/(length(SL)-k-1)
+    mleHSMM <- c(mnll, AICCCRW)
+  }
+  return(mleHSMM)
+}
 
 ################################
 # LW
