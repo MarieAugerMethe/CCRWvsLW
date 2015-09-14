@@ -577,17 +577,17 @@ nllTCRW <- function(SL,TA,lambda,kapp,SLmin=min(SL),SLmax=max(SL)){
 gen.Gamma.repar <- function(m,pSize,pMu){
   Gamma <- diag(m[1]+m[2])*0
   # p(r), for r=1,2,...N* (note that r=1 is 0 in dnbinom)
-  #probs1 <- dnbinom(0:(m[1]-1),size=pSize[1],mu=pMu[1])
-  #probs2 <- dnbinom(0:(m[2]-1),size=pSize[2],mu=pMu[2])
-  probs1 <- dnbinom(0:(m[1]-1),size=pSize[1],prob=pMu[1])
-  probs2 <- dnbinom(0:(m[2]-1),size=pSize[2],prob=pMu[2])
+  probs1 <- dnbinom(0:(m[1]-1),size=pSize[1],mu=pMu[1])
+  probs2 <- dnbinom(0:(m[2]-1),size=pSize[2],mu=pMu[2])
+#   probs1 <- dnbinom(0:(m[1]-1),size=pSize[1],prob=pMu[1])
+#   probs2 <- dnbinom(0:(m[2]-1),size=pSize[2],prob=pMu[2])
   
   # Denominator of c(r): 1 - sum_{k=1}^{r-1}p(k), so for r=1 -> 0 (because empty sum equals 0)
   # Use cumulative distribution function because it is the sum of the prob
-  #den1 <- 1 - c(0,pnbinom(0:(m[1]-2),size=pSize[1],mu=pMu[1]))
-  #den2 <- 1 - c(0,pnbinom(0:(m[2]-2),size=pSize[2],mu=pMu[2]))
-  den1 <- 1 - c(0,pnbinom(0:(m[1]-2),size=pSize[1],prob=pMu[1]))
-  den2 <- 1 - c(0,pnbinom(0:(m[2]-2),size=pSize[2],prob=pMu[2]))
+  den1 <- 1 - c(0,pnbinom(0:(m[1]-2),size=pSize[1],mu=pMu[1]))
+  den2 <- 1 - c(0,pnbinom(0:(m[2]-2),size=pSize[2],mu=pMu[2]))
+#   den1 <- 1 - c(0,pnbinom(0:(m[1]-2),size=pSize[1],prob=pMu[1]))
+#   den2 <- 1 - c(0,pnbinom(0:(m[2]-2),size=pSize[2],prob=pMu[2]))
   
   # To remove the chance of getting Inf
   probs1[which(den1<1e-12)] <- 1

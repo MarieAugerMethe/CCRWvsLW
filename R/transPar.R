@@ -21,14 +21,22 @@ transParCCRWww <- function(x){
 }
 
 transParHSMM <- function(x){
-  x[c(1:2,5:8)] <-  log(x[c(1:2,5:8)] - .Machine$double.xmin)
-  x[c(3:4,9)] <- qlogis(x[c(3:4,9)])
+#   # Prob parametrisation
+#   x[c(1:2,5:8)] <-  log(x[c(1:2,5:8)] - .Machine$double.xmin)
+#   x[c(3:4,9)] <- qlogis(x[c(3:4,9)])
+  # Mu parametrisation
+  x[1:8] <-  log(x[1:8] - .Machine$double.xmin)
+  x[9] <- qlogis(x[9])
   return(x)
 }
 
 transParHSMMl <- function(x){
-  x[c(1:2,4:7)] <-  log(x[c(1:2,4:7)] - .Machine$double.xmin)
-  x[c(3,8)] <- qlogis(x[c(3,8)])
+#   # Prob parametrisation
+#   x[c(1:2,4:7)] <-  log(x[c(1:2,4:7)] - .Machine$double.xmin)
+#   x[c(3,8)] <- qlogis(x[c(3,8)])
+  # Mu parametrisation
+  x[1:7] <-  log(x[1:7] - .Machine$double.xmin)
+  x[8] <- qlogis(x[8])
   return(x)
 }
 
@@ -38,21 +46,21 @@ transParTBW <- function(x){log(x)}
 transParx <- function(x){x}
 
 itransParHSMM <- function(x){
-  # Prob parametrisation
-  x[c(1:2,5:8)] <-  .Machine$double.xmin + exp(x[c(1:2,5:8)])
-  x[c(3:4,9)] <- plogis(x[c(3:4,9)])
-#   # Mu parametrisation
-#   x[1:8] <-  .Machine$double.xmin + exp(x[1:8])
-#   x[9] <- plogis(x[9])
+#   # Prob parametrisation
+#   x[c(1:2,5:8)] <-  .Machine$double.xmin + exp(x[c(1:2,5:8)])
+#   x[c(3:4,9)] <- plogis(x[c(3:4,9)])
+  # Mu parametrisation
+  x[1:8] <-  .Machine$double.xmin + exp(x[1:8])
+  x[9] <- plogis(x[9])
   return(x)
 }
 
 itransParHSMMl <- function(x){
-  #Prob parametrisation
-  x[c(1:2,4:7)] <-  .Machine$double.xmin + exp(x[c(1:2,4:7)])
-  x[c(3,8)] <- plogis(x[c(3,8)])
-#   # Mu parametrisation
-#   x[1:7] <-  .Machine$double.xmin + exp(x[1:7])
-#   x[8] <- plogis(x[8])
+#   #Prob parametrisation
+#   x[c(1:2,4:7)] <-  .Machine$double.xmin + exp(x[c(1:2,4:7)])
+#   x[c(3,8)] <- plogis(x[c(3,8)])
+  # Mu parametrisation
+  x[1:7] <-  .Machine$double.xmin + exp(x[1:7])
+  x[8] <- plogis(x[8])
   return(x)
 }
