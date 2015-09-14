@@ -391,6 +391,76 @@ mnllHSMMl <- function(SL, TA, TA_C, missL, notMisLoc){
 }
 
 ################################
+# HSMM - but with par gSI = gSE
+
+# Function that runs the numerical maximization of the above likelihood function and returns the results
+mnllHSMMs <- function(SL, TA, TA_C, missL, notMisLoc){
+  ########################################
+  # Parameters/variables used accros models
+  parF <- list("missL"=missL, "notMisLoc"=notMisLoc, "m"=c(10,10))
+  
+  # Initial parameter for numerical minimasation
+  gammaSize0 <- c(1,10,100,500) # number of step in behaviour
+  gammaPr0 <- 0.9  # negative binomial prob
+  sc0 <- matrix(quantile(SL, c(0.15, 0.25, 0.85, 0.75)),ncol=2)
+  sh0 <- c(1,1) # Weibull shape parameters
+  TA_T <- TA_C[TA>quantile(TA, 0.25) & TA<quantile(TA, 0.75)]
+  r0 <- max(mle.wrappedcauchy(TA_T, mu=circular(0))$rho,1e-20)
+  
+  par0 <- cbind(rep(gammaSize0,nrow(sc0)),
+                gammaPr0,gammaPr0,
+                rep(sc0[,1],each=length(gammaSize0)),rep(sc0[,2],each=length(gammaSize0)),
+                sh0[1],sh0[2],r0)
+  
+  
+  # Creating a matrix that will save the minimiztion results
+  mnll <- matrix(NA, ncol=9, nrow=nrow(par0))
+  colnames(mnll) <- c("gS", "gPI", "gPE", "scI", "scE", "shI", "shE", "rE", "mnll")
+  
+  for(i in 1:nrow(par0)){
+    mnllRes <- tryCatch(optim(transParHSMMs(par0[i,]), nllHSMMs, SL=SL, TA=TA, parF=parF),
+                        error=function(e) list("par"=rep(NA,8),'value'=NA))
+    mnll[i,1:8] <- itransParHSMMs(mnllRes$par)
+    mnll[i,'mnll'] <- mnllRes$value
+  }
+  mnll <- mnll[which.min(mnll[,'mnll']),]
+  
+  #########################
+  # This HSMM is hard to minimise, so add extra step for minimisation
+  mnllRes <- tryCatch(optim(transParHSMMs(mnll[1:8]),nllHSMMs,SL=SL,TA=TA, parF=parF),
+                      error=function(e) list("par"=rep(NA,8),'value'=NA))
+  if(!is.na(mnllRes$value)){
+    while(!is.na(mnllRes$value) & mnllRes$value < mnll['mnll']){
+      mnll[1:8] <- itransParHSMMs(mnllRes$par)
+      mnll['mnll'] <- mnllRes$value
+      mnllRes <- tryCatch(optim(transParHSMMs(mnll[1:8]),nllHSMMs,SL=SL,TA=TA, parF=parF),
+                          error=function(e) list("par"=rep(NA,8),'value'=NA))
+    }
+    if(!is.na(mnllRes$value) & mnllRes$value <= mnll['mnll']){
+      mnll[1:8] <- itransParHSMMs(mnllRes$par)
+      mnll['mnll'] <- mnllRes$value
+    }  
+  }
+  
+  
+  if (length(mnll)==0){ # In case no minimization was able to get good values
+    mleHSMM <- rep(NA,11)
+    names(mleHSMM) <- c("gSI", "gSE", "gP","scI", "scE", "shI", "shE", "rE", "mnll", "AIC", "AICc")
+  }else{
+    # According to Burnham and Anderson (2002)
+    # AIC = 2*nll + 2*k
+    # AICc = AIC + 2*k*(k+1)/(n-K-1)
+    AICCCRW <- matrix(NA, ncol=2)
+    k <- length(par0[1,])
+    names(AICCCRW) <- c("AIC", "AICc")
+    AICCCRW[,1] <- 2*k + 2*mnll["mnll"]
+    AICCCRW[,2] <- AICCCRW[,1] + (2*k*(k+1))/(length(SL)-k-1)
+    mleHSMM <- c(mnll, AICCCRW)
+  }
+  return(mleHSMM)
+}
+
+################################
 # LW
 
 mnllLW <- function(SL, TA, SLmin=min(SL)){

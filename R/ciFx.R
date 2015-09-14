@@ -206,6 +206,30 @@ ciHSMMl <- function(SL,TA,missL,notMisLoc,mleM){
   return(CI)
 }
 
+# HSMM with gSI=gSE
+
+ciHSMMs <- function(SL,TA,missL,notMisLoc,mleM){
+  # Table for the CI
+  CI <- matrix(NA, nrow=8, ncol=3)
+  rownames(CI) <- names(mleM[1:8])
+  colnames(CI) <- c("estimate","L95CI", "U95CI")
+  
+  # Parameter estimates
+  CI[,1] <- mleM[1:8]
+  
+  parF <- list("missL"=missL, "notMisLoc"=notMisLoc, m=c(10,10))
+  
+  M <- diag(CI[1:8,1])
+  
+  if(any(is.na(mleM[1:8]))){
+    warning("The optim return NA values for the parameters, so no CI calculated")
+  }else{
+    CI[,2:3] <- tryCatch(CI.Hessian(SL,TA, CI[,1], transParHSMMs, M,
+                                    parF=parF, nllHSMMs), error=function(e) c(NA,NA))
+  }
+  
+  return(CI)
+}
 
 #######################################
 # LW

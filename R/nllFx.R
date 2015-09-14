@@ -660,6 +660,9 @@ nllHSMM <- function(SL, TA, x, parF){
   return(-lscale)
 }
 
+##############
+# HSMM with gPI=gPE
+
 nllHSMMl <- function(SL, TA, x, parF){
   # parf need missL and notMissLoc and m
   #####
@@ -707,3 +710,55 @@ nllHSMMl <- function(SL, TA, x, parF){
   }
   return(-lscale)
 }
+
+#####################
+# HSMM gSI=gSE
+
+nllHSMMs <- function(SL, TA, x, parF){
+  # parf need missL and notMissLoc and m
+  #####
+  # Parameters to estimate - transforming for unconstrained parameter
+  xp <- itransParHSMMs(x)
+  gS <- xp[1]
+  gPI <- xp[2]
+  gPE <- xp[3]
+  scI <- xp[4]
+  scE <- xp[5]
+  shI <- xp[6]
+  shE <- xp[7]
+  rE <- xp[8] # Note that kappa can be 0 (uniform)
+  
+  
+  ##
+  # To allow to fix some of the parameters
+  # This is need for the profile likelihood CI
+  if(length(parF)>0){
+    for (i in 1:length(parF)){
+      assign(names(parF[i]),parF[[i]])
+    }
+  }
+  
+  gamma <- gen.Gamma.repar(m,c(gS,gS),c(gPI,gPE)) # Creating transition probility matrix
+  delta <- solve(t(diag(sum(m))-gamma+1),rep(1,sum(m))) # Getting the probility of the first step - stationary distribution
+  
+  # This is the real length of the time series (include missing data)
+  n <- length(SL) + sum(missL-1)
+  
+  obsProb <- matrix(rep(1,sum(m)*n),nrow=n)
+  # Making a matrix with all the probability of observations for each state
+  # Note that for missing location observation probablility is 1
+  obsProb[notMisLoc,1:m[1]] <-  dweibull(SL, shI, scI) * dwrpcauchy(TA, 0, 0)
+  obsProb[notMisLoc,(m[1]+1):sum(m)] <-  dweibull(SL, shE, scE) * dwrpcauchy(TA, 0, rE)
+  
+  foo <- delta  
+  lscale <- 0
+  for (i in 1:n){
+    foo <- foo%*%gamma*obsProb[i,]  
+    sumfoo <- sum(foo)
+    lscale <- lscale+log(sumfoo)
+    foo <- foo/sumfoo
+    #if(any(is.nan(foo))){stop(print(i))}
+  }
+  return(-lscale)
+}
+
