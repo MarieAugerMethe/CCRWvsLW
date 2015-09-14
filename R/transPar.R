@@ -37,8 +37,22 @@ transParTBW <- function(x){log(x)}
 # For model that don't need transformation
 transParx <- function(x){x}
 
+itransParHSMM <- function(x){
+  # Prob parametrisation
+  x[c(1:2,5:8)] <-  .Machine$double.xmin + exp(x[c(1:2,5:8)])
+  x[c(3:4,9)] <- plogis(x[c(3:4,9)])
+#   # Mu parametrisation
+#   x[1:8] <-  .Machine$double.xmin + exp(x[1:8])
+#   x[9] <- plogis(x[9])
+  return(x)
+}
+
 itransParHSMMl <- function(x){
+  #Prob parametrisation
   x[c(1:2,4:7)] <-  .Machine$double.xmin + exp(x[c(1:2,4:7)])
   x[c(3,8)] <- plogis(x[c(3,8)])
+#   # Mu parametrisation
+#   x[1:7] <-  .Machine$double.xmin + exp(x[1:7])
+#   x[8] <- plogis(x[8])
   return(x)
 }

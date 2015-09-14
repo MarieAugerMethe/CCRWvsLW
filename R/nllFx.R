@@ -615,15 +615,16 @@ nllHSMM <- function(SL, TA, x, parF){
   # parf need missL and notMissLoc and m
   #####
   # Parameters to estimate - transforming for unconstrained parameter
-  gSI <- .Machine$double.xmin + exp(x[1])
-  gSE <- .Machine$double.xmin + exp(x[2])
-  gPI <- plogis(x[3])
-  gPE <- plogis(x[4])
-  scI <- .Machine$double.xmin + exp(x[5])
-  scE <- .Machine$double.xmin + exp(x[6])
-  shI <- .Machine$double.xmin + exp(x[7])
-  shE <- .Machine$double.xmin + exp(x[8])
-  rE <- plogis(x[9]) # Note that kappa can be 0 (uniform)
+  xp <- itransParHSMM(x)
+  gSI <- xp[1]
+  gSE <- xp[2]
+  gPI <- xp[3]
+  gPE <- xp[4]
+  scI <- xp[5]
+  scE <- xp[6]
+  shI <- xp[7]
+  shE <- xp[8]
+  rE <- xp[9] # Note that kappa can be 0 (uniform)
 
   
   ##
@@ -663,14 +664,15 @@ nllHSMMl <- function(SL, TA, x, parF){
   # parf need missL and notMissLoc and m
   #####
   # Parameters to estimate - transforming for unconstrained parameter
-  gSI <- .Machine$double.xmin + exp(x[1])
-  gSE <- .Machine$double.xmin + exp(x[2])
-  gP <- plogis(x[3])
-  scI <- .Machine$double.xmin + exp(x[4])
-  scE <- .Machine$double.xmin + exp(x[5])
-  shI <- .Machine$double.xmin + exp(x[6])
-  shE <- .Machine$double.xmin + exp(x[7])
-  rE <- plogis(x[8]) # Note that kappa can be 0 (uniform)
+  xp <- itransParHSMMl(x)
+  gSI <- xp[1]
+  gSE <- xp[2]
+  gP <- xp[3]
+  scI <- xp[4]
+  scE <- xp[5]
+  shI <- xp[6]
+  shE <- xp[7]
+  rE <- xp[8] # Note that kappa can be 0 (uniform)
   
   
   ##

@@ -260,8 +260,7 @@ mnllCCRWww <- function(SL, TA, TA_C, missL){
 mnllHSMM <- function(SL, TA, TA_C, missL, notMisLoc){
   ########################################
   # Parameters used accros models
-  # size of state aggregates
-  m <- c(10,10)
+  parF <- list("missL"=missL, "notMisLoc"=notMisLoc, "m"=c(10,10))
   
   # Initial parameter for numerical minimasation
   gammaSize0 <- matrix(c(3,1,3,3),nrow=2) # number of step in behaviour
@@ -280,36 +279,28 @@ mnllHSMM <- function(SL, TA, TA_C, missL, notMisLoc){
   colnames(mnll) <- c("gSI", "gSE", "gPI", "gPE","scI", "scE", "shI", "shE", "rE", "mnll")
   
   for(i in 1:nrow(par0)){
-    mnllRes <- tryCatch(optim(transParHSMM(par0[i,]),nllHSMM,SL=SL,TA=TA, 
-                              parF=list("missL"=missL, "notMisLoc"=notMisLoc, "m"=m)),
+    mnllRes <- tryCatch(optim(transParHSMM(par0[i,]), nllHSMM, SL=SL, TA=TA, parF=parF),
                         error=function(e) list("par"=rep(NA,9),'value'=NA))
-    mnll[i,c(1:2,5:8)] <- .Machine$double.xmin + exp(mnllRes$par[c(1:2,5:8)])
-    mnll[i,c(3:4,9)] <- plogis(mnllRes$par[c(3:4,9)])
+    mnll[i,1:9] <- itransParHSMM(mnllRes$par)
     mnll[i,'mnll'] <- mnllRes$value
   }
   mnll <- mnll[which.min(mnll[,'mnll']),]
   #########################
   # This HSMM is hard to minimise, so add extra step for minimisation
-  mnllRes <- tryCatch(optim(transParHSMM(mnll[1:9]),nllHSMM,SL=SL,TA=TA, 
-                            parF=list("missL"=missL, "notMisLoc"=notMisLoc, "m"=m)),
+  mnllRes <- tryCatch(optim(transParHSMM(mnll[1:9]), nllHSMM, SL=SL, TA=TA, parF=parF),
                       error=function(e) list("par"=rep(NA,9),'value'=NA))
   if(!is.na(mnllRes$value)){
     while(!is.na(mnllRes$value) & mnllRes$value < mnll['mnll']){
-      mnll[c(1:2,5:8)] <- .Machine$double.xmin + exp(mnllRes$par[c(1:2,5:8)])
-      mnll[c(3:4,9)] <- plogis(mnllRes$par[c(3:4,9)])
+      mnll[1:9] <- itransParHSMM(mnllRes$par)
       mnll['mnll'] <- mnllRes$value
-      mnllRes <- tryCatch(optim(transParHSMM(mnll[1:9]),nllHSMM,SL=SL,TA=TA, 
-                                parF=list("missL"=missL, "notMisLoc"=notMisLoc, "m"=m)),
+      mnllRes <- tryCatch(optim(transParHSMM(mnll[1:9]), nllHSMM, SL=SL, TA=TA, parF=parF),
                           error=function(e) list("par"=rep(NA,9),'value'=NA))
     }
     if(!is.na(mnllRes$value) & mnllRes$value <= mnll['mnll']){
-      mnll[c(1:2,5:8)] <- .Machine$double.xmin + exp(mnllRes$par[c(1:2,5:8)])
-      mnll[c(3:4,9)] <- plogis(mnllRes$par[c(3:4,9)])
+      mnll[1:9] <- itransParHSMM(mnllRes$par)
       mnll['mnll'] <- mnllRes$value  
     }  
   }
-  
-  
   
   if (length(mnll)==0){ # In case no minimization was able to get good values
     mleHSMM <- rep(NA,12)
@@ -335,21 +326,21 @@ mnllHSMM <- function(SL, TA, TA_C, missL, notMisLoc){
 # Function that runs the numerical maximization of the above likelihood function and returns the results
 mnllHSMMl <- function(SL, TA, TA_C, missL, notMisLoc){
   ########################################
-  # Parameters used accros models
-  # size of state aggregates
-  m <- c(10,10)
-  parF <- list("missL"=missL, "notMisLoc"=notMisLoc, "m"=m)
+  # Parameters/variables used accros models
+  parF <- list("missL"=missL, "notMisLoc"=notMisLoc, "m"=c(10,10))
   
   # Initial parameter for numerical minimasation
-  gammaSize0 <- matrix(c(3,1,3,3),nrow=2) # number of step in behaviour
+  gammaSize0 <- matrix(c(1,1,10,10,100,100,500,500),nrow=4,byrow=TRUE) # number of step in behaviour
   gammaPr0 <- 0.9  # negative binomial prob
   sc0 <- matrix(quantile(SL, c(0.15, 0.25, 0.85, 0.75)),ncol=2)
   sh0 <- c(1,1) # Weibull shape parameters
   TA_T <- TA_C[TA>quantile(TA, 0.25) & TA<quantile(TA, 0.75)]
   r0 <- max(mle.wrappedcauchy(TA_T, mu=circular(0))$rho,1e-20)
   
-  par0 <- cbind(rep(gammaSize0[,1],2),rep(gammaSize0[,2],2),gammaPr0,
-                rep(sc0[,1],each=2),rep(sc0[,2],each=2),sh0[1],sh0[2],r0)
+  par0 <- cbind(rep(gammaSize0[,1],nrow(sc0)),rep(gammaSize0[,2],nrow(sc0)),
+                gammaPr0,
+                rep(sc0[,1],each=nrow(gammaSize0)),rep(sc0[,2],each=nrow(gammaSize0)),
+                sh0[1],sh0[2],r0)
   
   
   # Creating a matrix that will save the minimiztion results
