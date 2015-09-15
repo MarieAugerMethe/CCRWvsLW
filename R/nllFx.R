@@ -577,17 +577,17 @@ nllTCRW <- function(SL,TA,lambda,kapp,SLmin=min(SL),SLmax=max(SL)){
 gen.Gamma.repar <- function(m,pSize,pMu){
   Gamma <- diag(m[1]+m[2])*0
   # p(r), for r=1,2,...N* (note that r=1 is 0 in dnbinom)
-  probs1 <- dnbinom(0:(m[1]-1),size=pSize[1],mu=pMu[1])
-  probs2 <- dnbinom(0:(m[2]-1),size=pSize[2],mu=pMu[2])
-#   probs1 <- dnbinom(0:(m[1]-1),size=pSize[1],prob=pMu[1])
-#   probs2 <- dnbinom(0:(m[2]-1),size=pSize[2],prob=pMu[2])
+#   probs1 <- dnbinom(0:(m[1]-1),size=pSize[1],mu=pMu[1])
+#   probs2 <- dnbinom(0:(m[2]-1),size=pSize[2],mu=pMu[2])
+  probs1 <- dnbinom(0:(m[1]-1),size=pSize[1],prob=pMu[1])
+  probs2 <- dnbinom(0:(m[2]-1),size=pSize[2],prob=pMu[2])
   
   # Denominator of c(r): 1 - sum_{k=1}^{r-1}p(k), so for r=1 -> 0 (because empty sum equals 0)
   # Use cumulative distribution function because it is the sum of the prob
-  den1 <- 1 - c(0,pnbinom(0:(m[1]-2),size=pSize[1],mu=pMu[1]))
-  den2 <- 1 - c(0,pnbinom(0:(m[2]-2),size=pSize[2],mu=pMu[2]))
-#   den1 <- 1 - c(0,pnbinom(0:(m[1]-2),size=pSize[1],prob=pMu[1]))
-#   den2 <- 1 - c(0,pnbinom(0:(m[2]-2),size=pSize[2],prob=pMu[2]))
+#   den1 <- 1 - c(0,pnbinom(0:(m[1]-2),size=pSize[1],mu=pMu[1]))
+#   den2 <- 1 - c(0,pnbinom(0:(m[2]-2),size=pSize[2],mu=pMu[2]))
+  den1 <- 1 - c(0,pnbinom(0:(m[1]-2),size=pSize[1],prob=pMu[1]))
+  den2 <- 1 - c(0,pnbinom(0:(m[2]-2),size=pSize[2],prob=pMu[2]))
   
   # To remove the chance of getting Inf
   probs1[which(den1<1e-12)] <- 1
@@ -762,3 +762,83 @@ nllHSMMs <- function(SL, TA, x, parF){
   return(-lscale)
 }
 
+################
+# HSMM but with poisson instead of negbinom, since I often get negbinomial with large size,
+# which is the equivalent of poison
+nllHSMMp <- function(SL, TA, x, parF){
+  # parf need missL and notMissLoc and m
+  #####
+  # Parameters to estimate - transforming for unconstrained parameter
+  xp <- itransParHSMMp(x)
+  laI <- xp[1]
+  laE <- xp[2]
+  scI <- xp[3]
+  scE <- xp[4]
+  shI <- xp[5]
+  shE <- xp[6]
+  rE <- xp[7] # Note that kappa can be 0 (uniform)
+  
+  
+  ##
+  # To allow to fix some of the parameters
+  # This is need for the profile likelihood CI
+  if(length(parF)>0){
+    for (i in 1:length(parF)){
+      assign(names(parF[i]),parF[[i]])
+    }
+  }
+  
+  gamma <- gen.Gamma.pois(m,c(laI,laE)) # Creating transition probility matrix
+  delta <- solve(t(diag(sum(m))-gamma+1),rep(1,sum(m))) # Getting the probility of the first step - stationary distribution
+  
+  # This is the real length of the time series (include missing data)
+  n <- length(SL) + sum(missL-1)
+  
+  obsProb <- matrix(rep(1,sum(m)*n),nrow=n)
+  # Making a matrix with all the probability of observations for each state
+  # Note that for missing location observation probablility is 1
+  obsProb[notMisLoc,1:m[1]] <-  dweibull(SL, shI, scI) * dwrpcauchy(TA, 0, 0)
+  obsProb[notMisLoc,(m[1]+1):sum(m)] <-  dweibull(SL, shE, scE) * dwrpcauchy(TA, 0, rE)
+  
+  foo <- delta  
+  lscale <- 0
+  for (i in 1:n){
+    foo <- foo%*%gamma*obsProb[i,]  
+    sumfoo <- sum(foo)
+    lscale <- lscale+log(sumfoo)
+    foo <- foo/sumfoo
+    #if(any(is.nan(foo))){stop(print(i))}
+  }
+  return(-lscale)
+}
+
+###
+# function that derives the t.p.m. of the HMM that represents the HSMM
+# dbinom reparametrise with mu
+gen.Gamma.pois <- function(m,lamb){
+  Gamma <- diag(m[1]+m[2])*0
+  probs1 <- dpois(0:(m[1]-1),lambda=lamb[1])
+  probs2 <- dpois(0:(m[2]-1),lambda=lamb[2])
+  
+  # Denominator of c(r): 1 - sum_{k=1}^{r-1}p(k), so for r=1 -> 0 (because empty sum equals 0)
+  # Use cumulative distribution function because it is the sum of the prob
+  den1 <- 1 - c(0,ppois(0:(m[1]-2),lambda=lamb[1]))
+  den2 <- 1 - c(0,ppois(0:(m[2]-2),lambda=lamb[2]))
+  
+  # To remove the chance of getting Inf
+  probs1[which(den1<1e-12)] <- 1
+  den1[which(den1<1e-12)] <- 1
+  probs2[which(den2<1e-12)] <- 1
+  den2[which(den2<1e-12)] <- 1
+  
+  # state aggregate 1
+  Gamma[1:m[1],m[1]+1] <- probs1/den1 # c_1(r) for r=1,2,...,N_1* in first column of Beh 2
+  diag(Gamma[1:(m[1]-1),2:m[1]]) <- 1-Gamma[1:(m[1]-1),m[1]+1] # 1-c_1(r), for r=1,2,...,N_1*-1
+  Gamma[m[1],m[1]] <- 1 - Gamma[m[1],m[1]+1] # 1-c_1(N_1*)
+  
+  # state aggregate 2
+  Gamma[m[1]+(1:m[2]),1] <- probs2/den2 # c_2(r) for r=1,2,...,N_2* in first column of Beh 1
+  diag(Gamma[m[1]+1:(m[2]-1),m[1]+2:m[2]]) <- 1 - Gamma[m[1]+1:(m[2]-1),1] # 1-c_2(r), for r=1,2,...,N_2*-1
+  Gamma[m[1]+m[2],m[1]+m[2]] <- 1 - Gamma[m[1]+m[2],1] # 1-c_2(N_2*)
+  return(Gamma)
+}

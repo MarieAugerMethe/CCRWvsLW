@@ -157,77 +157,26 @@ ciCCRWww <- function(SL,TA,missL,mleM){
 
 #######################################
 # HSMM - semi hidden mark model with wrapped Cauchy and weibull
-
-ciHSMM <- function(SL,TA,missL,notMisLoc,mleM){
+# HSMM general function for CI
+ciHSMMg <- function(SL,TA,missL,notMisLoc,mleM, nPar, NLL, transPar){
   # Table for the CI
-  CI <- matrix(NA, nrow=9, ncol=3)
-  rownames(CI) <- names(mleM[1:9])
+  CI <- matrix(NA, nrow=nPar, ncol=3)
+  rownames(CI) <- names(mleM[1:nPar])
   colnames(CI) <- c("estimate","L95CI", "U95CI")
   
   # Parameter estimates
-  CI[,1] <- mleM[1:9]
+  CI[,1] <- mleM[1:nPar]
   
   parF <- list("missL"=missL, "notMisLoc"=notMisLoc, m=c(10,10))
   
-  M <- diag(CI[1:9,1])
+  M <- diag(CI[1:nPar,1])
   
-  if(any(is.na(mleM[1:9]))){
+  if(any(is.na(mleM[1:nPar]))){
     warning("The optim return NA values for the parameters, so no CI calculated")
   }else{
-    CI[,2:3] <- tryCatch(CI.Hessian(SL,TA, CI[,1], transParHSMM, M,
-                           parF=parF, nllHSMM), error=function(e) c(NA,NA))
+    CI[,2:3] <- tryCatch(CI.Hessian(SL,TA, CI[,1], transPar, M,
+                                    parF=parF, NLL), error=function(e) c(NA,NA))
   }
-  
-  return(CI)
-}
-
-# HSMM with gPI=gPE
-
-ciHSMMl <- function(SL,TA,missL,notMisLoc,mleM){
-  # Table for the CI
-  CI <- matrix(NA, nrow=8, ncol=3)
-  rownames(CI) <- names(mleM[1:8])
-  colnames(CI) <- c("estimate","L95CI", "U95CI")
-  
-  # Parameter estimates
-  CI[,1] <- mleM[1:8]
-  
-  parF <- list("missL"=missL, "notMisLoc"=notMisLoc, m=c(10,10))
-  
-  M <- diag(CI[1:8,1])
-  
-  if(any(is.na(mleM[1:8]))){
-    warning("The optim return NA values for the parameters, so no CI calculated")
-  }else{
-    CI[,2:3] <- tryCatch(CI.Hessian(SL,TA, CI[,1], transParHSMMl, M,
-                                    parF=parF, nllHSMMl), error=function(e) c(NA,NA))
-  }
-  
-  return(CI)
-}
-
-# HSMM with gSI=gSE
-
-ciHSMMs <- function(SL,TA,missL,notMisLoc,mleM){
-  # Table for the CI
-  CI <- matrix(NA, nrow=8, ncol=3)
-  rownames(CI) <- names(mleM[1:8])
-  colnames(CI) <- c("estimate","L95CI", "U95CI")
-  
-  # Parameter estimates
-  CI[,1] <- mleM[1:8]
-  
-  parF <- list("missL"=missL, "notMisLoc"=notMisLoc, m=c(10,10))
-  
-  M <- diag(CI[1:8,1])
-  
-  if(any(is.na(mleM[1:8]))){
-    warning("The optim return NA values for the parameters, so no CI calculated")
-  }else{
-    CI[,2:3] <- tryCatch(CI.Hessian(SL,TA, CI[,1], transParHSMMs, M,
-                                    parF=parF, nllHSMMs), error=function(e) c(NA,NA))
-  }
-  
   return(CI)
 }
 

@@ -440,6 +440,29 @@ ciHSMMspl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0, nPar=8
   return(CI)
 }
 
+# HSMM with poisson
+
+ciHSMMgpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0, nPar=7, transPar, NLL){
+  movD <- movFormat(movltraj, TAc)
+  parF <- list("missL"= movD$missL, "notMisLoc"= movD$notMisLoc, "m"=c(10,10))
+  
+  CI <- matrix(NA,nrow=nPar,ncol=3)
+  rownames(CI) <- names(mleM[1:nPar])
+  colnames(CI) <- c("estimate","L95CI", "U95CI")
+  CI[,1] <- mleM[1:nPar]
+  
+  if(graph==TRUE){
+    layout(matrix(1:nPar, nrow=1))
+  }
+  
+  for(i in 1:nPar){
+    CI[i,2:3] <- CI.PL(movD$SL, movD$TA, mleM[i], mleM[1:nPar], transPar, NLL,
+                       parF, rangePar[i,],
+                       mleM['mnll'], B=B, graph, extOpt = TRUE) 
+  }
+  
+  return(CI)
+}
 
 
 #######################################

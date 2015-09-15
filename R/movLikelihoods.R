@@ -3,7 +3,8 @@
 # Date created: March 28, 2011
 # Updated: April 3, 2013
 
-movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=TRUE, dn=FALSE, ww=FALSE, hs=FALSE, hsl=FALSE, hss=FALSE){
+movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=TRUE, dn=FALSE, 
+                           ww=FALSE, hs=FALSE, hsl=FALSE, hss=FALSE, hsp=FALSE){
   
   #######################################
   # This script estimates the parameters and calculates the AIC of multiple movement models:
@@ -109,6 +110,11 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=T
     mleMov$HSMMs <- mleHSMMs
   }
   
+  if(hsp){
+    mleHSMMp <- mnllHSMMp(SL, TA, TA_C, missL, notMisLoc)  
+    mleMov$HSMMp <- mleHSMMp
+  }
+  
   ######################
   # Calculating the CI
   
@@ -148,15 +154,23 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=T
   }
   
   if(hs){
-    CI$HSMM <- ciHSMM(SL,TA,missL,notMisLoc,mleHSMM)
+    CI$HSMM <- ciHSMMg(SL, TA, missL, notMisLoc,
+                       mleHSMM, 9, nllHSMM, transParHSMM)
   }
   
   if(hsl){
-    CI$HSMMl <- ciHSMMl(SL,TA,missL,notMisLoc,mleHSMMl)
+    CI$HSMMl <- ciHSMMg(SL, TA, missL, notMisLoc,
+                        mleHSMMl, 8, nllHSMMl, transParHSMMl)
   }
   
   if(hss){
-    CI$HSMMs <- ciHSMMs(SL,TA,missL,notMisLoc,mleHSMMs)
+    CI$HSMMs <- ciHSMMg(SL, TA, missL, notMisLoc,
+                        mleHSMMs, 8, nllHSMMs, transParHSMMs)
+  }
+  
+  if(hsp){
+    CI$HSMMp <- ciHSMMg(SL, TA, missL, notMisLoc,
+                        mleHSMMp, 7, nllHSMMp, transParHSMMp)
   }
   
   #######
