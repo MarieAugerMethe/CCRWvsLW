@@ -151,9 +151,11 @@ movResHSMM$CI$HSMM
 rangeB <- cbind(movResHSMM$CI$HSMM[,2]*0.5,movResHSMM$CI$HSMM[,3]*1.3)
 rangeB[,1][is.nan(rangeB[,1])] <- (movResHSMM$mleMov$HSMM[1:9]*0.8)[is.nan(rangeB[,1])]
 rangeB[,2][is.nan(rangeB[,2])] <- (movResHSMM$mleMov$HSMM[1:9]*1.2)[is.nan(rangeB[,2])]
-ciPL <- ciHSMMpl(mov, movResHSMM$mle$HSMM,
-                   rangePar=rangeB, B=15) # slow so only looking at 15 values for this example
+
+ciPL <- ciHSMMgpl(mov, movResHSMM$mle$HSMM,
+                  rangePar=rangeB, B=15, nPar=9, transPar=transParHSMM, NLL=nllHSMM)
 ciPL
+
 
 # Look at test of absolute fit
 round(movResHSMM$pseudoRes$PR["pval",],3)
@@ -173,8 +175,9 @@ movResHSMMl$CI$HSMMl
 
 # Look at the profile likelihood CI
 rangeB <- cbind(movResHSMMl$CI$HSMMl[,2]*0.5,movResHSMMl$CI$HSMMl[,3]*1.3)
-ciPL <- ciHSMMlpl(mov, movResHSMMl$mle$HSMMl,
-                 rangePar=rangeB, B=15) # slow so only looking at 15 values for this example
+ciPL <- ciHSMMgpl(mov, movResHSMMl$mle$HSMMl,
+                  rangePar=rangeB, B=15, nPar=8,
+                  transPar=transParHSMMl, NLL=nllHSMMl)
 ciPL
 
 # Look at test of absolute fit
@@ -194,12 +197,13 @@ movResHSMMs$CI$HSMMs
 
 # Look at the profile likelihood CI
 rangeB <- cbind(movResHSMMs$CI$HSMMs[,2]*0.5,movResHSMMs$CI$HSMMs[,3]*1.3)
-ciPL <- ciHSMMspl(mov, movResHSMMs$mle$HSMMs,
-                  rangePar=rangeB, B=15) # slow so only looking at 15 values for this example
+ciPL <- ciHSMMgpl(mov, movResHSMMs$mle$HSMMs,
+                  rangePar=rangeB, B=15, nPar=8,
+                  transPar=transParHSMMs, NLL=nllHSMMs)
 ciPL
 
 # Look at test of absolute fit
-round(movResHSMMl$pseudoRes$PR["pval",],3)
+round(movResHSMMs$pseudoRes$PR["pval",],3)
 # Significantly different because it's a different model
 
 
@@ -217,7 +221,3 @@ rangeB <- cbind(movResHSMMp$CI$HSMMp[,2]*0.5,movResHSMMp$CI$HSMMp[,3]*1.3)
 ciPL <- ciHSMMgpl(mov, movResHSMMp$mle$HSMMp,
                   rangePar=rangeB, B=15, nPar=7, transPar=transParHSMMp, NLL=nllHSMMp)
 ciPL
-
-# Look at test of absolute fit
-round(movResHSMMl$pseudoRes$PR["pval",],3)
-# Significantly different because it's a different model
