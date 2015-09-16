@@ -113,7 +113,7 @@ CI.PL.EM <- function(SL, TA, parI, parMLE, missL, parF, rang.b, mnll.m, notMisLo
 }
 
 #######################################
-CI.PL <- function(SL, TA, parI, parMLE, trans.par, NLL, parF, rang.b, mnll.m, B=100, graph=TRUE, extOpt =FALSE){
+CI.PL <- function(SL, TA, parI, parMLE, transPar, NLL, parF, rang.b, mnll.m, B=100, graph=TRUE, extOpt =FALSE){
   
   # Function inputs
   # SL: step length
@@ -135,7 +135,7 @@ CI.PL <- function(SL, TA, parI, parMLE, trans.par, NLL, parF, rang.b, mnll.m, B=
   rang.mnll <- numeric(B)
   
   for (i in 1:B){
-    mnllRes <- tryCatch(optim(trans.par(parMLE),NLL,SL=SL,TA=TA, parF=c(parF,rang.parI[i])),
+    mnllRes <- tryCatch(optim(transPar(parMLE),NLL,SL=SL,TA=TA, parF=c(parF,rang.parI[i])),
                         error=function(e) list('value'=NA, 
                                                'message'='Optim returned an error in the CI.PL function'))
     if(extOpt){
@@ -144,7 +144,7 @@ CI.PL <- function(SL, TA, parI, parMLE, trans.par, NLL, parF, rang.b, mnll.m, B=
                              error=function(e) list('value'=NA, 
                                                     'message'='Optim returned an error in the CI.PL function'))
       }else{
-        mnllRes2 <- tryCatch(optim(trans.par(parMLE)*1.1,NLL,SL=SL,TA=TA, parF=c(parF,rang.parI[i])),
+        mnllRes2 <- tryCatch(optim(transPar(parMLE)*1.1,NLL,SL=SL,TA=TA, parF=c(parF,rang.parI[i])),
                              error=function(e) list('value'=NA, 
                                                     'message'='Optim returned an error in the CI.PL function'))
         mnllRes$value <- mnllRes2$value + 10
@@ -186,11 +186,12 @@ CI.PL <- function(SL, TA, parI, parMLE, trans.par, NLL, parF, rang.b, mnll.m, B=
     }
   }
   
-  lci <- approx(prof.lower,prof.l.avec,
-                xout = thr_95)
+  lci <- tryCatch(approx(prof.lower, prof.l.avec, xout = thr_95), 
+                error=function(e) list(y=NA))
   
-  uci <- approx(prof.upper,prof.u.avec,
-                xout = thr_95, ties="ordered")
+  uci <- tryCatch(approx(prof.upper,prof.u.avec,
+                xout = thr_95, ties="ordered"), 
+                error=function(e) list(y=NA))
   
   res <- c('LCI'=lci$y, 'UCI'=uci$y)
   
@@ -208,7 +209,7 @@ CI.PL <- function(SL, TA, parI, parMLE, trans.par, NLL, parF, rang.b, mnll.m, B=
 #######################################
 # Becaus ethe other models are not using an EM algorthim and can generally be divided into
 # indepedent parameters you can do a slice.
-CI.Slice <- function(SL, TA, parI, parF, trans.par, NLL, rang.b, mnll.m, B=100, graph=TRUE){
+CI.Slice <- function(SL, TA, parI, parF, transPar, NLL, rang.b, mnll.m, B=100, graph=TRUE){
   
   #######################################
   # This function calculates the 95% confidence interval
@@ -259,7 +260,7 @@ CI.Slice <- function(SL, TA, parI, parF, trans.par, NLL, rang.b, mnll.m, B=100, 
   rang.mnll <- numeric(B)
   
   for (i in 1:B){
-    rang.mnll[i] <- NLL(SL=SL,TA=TA,trans.par(rang.parI[i]),parF=parF)
+    rang.mnll[i] <- NLL(SL=SL,TA=TA,transPar(rang.parI[i]),parF=parF)
   }
   
   if(rang.b[1]==parI){
@@ -414,9 +415,6 @@ ciLWpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   notMisLoc <- movD$notMisLoc
   
   parF <- list('SLmin'=SLmin)
-  # Some models used transformed parameters in nll
-  # Thus trans.par called in an input of CI.slice
-  trans.par <- function(x){x}
   
   # The PL likelihood is more a slice in this case
   # since the other parameter estimated: a
@@ -426,7 +424,7 @@ ciLWpl <- function(movltraj, mleM, rangePar, B=100, graph=TRUE, TAc=0){
   colnames(CI) <- c("estimate","L95CI_PL", "U95CI_PL")
   
   CI[,1] <- mleM[1]
-  CI[,2:3] <- CI.Slice(SL, TA, mleM[1], parF, trans.par, nllLW, rangePar, mleM['mnll'], B, graph)
+  CI[,2:3] <- CI.Slice(SL, TA, mleM[1], parF, transParx, nllLW, rangePar, mleM['mnll'], B, graph)
   
   return(CI)
 }
