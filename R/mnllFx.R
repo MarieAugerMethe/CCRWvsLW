@@ -481,14 +481,19 @@ mnllHSMMp <- function(SL, TA, TA_C, missL, notMisLoc){
   
   # Initial parameter for numerical minimasation
   lam0 <- matrix(c(0.5,0.5,1,1,5,5,10,10,0.1,10,10,0.1,5,10,10,5),ncol=2, byrow=TRUE) # mean number of step in behaviour
-  sc0 <- matrix(quantile(SL, c(0.15, 0.25, 0.35, 0.85, 0.75, 0.65)),ncol=2)
-  sh0 <- c(1,1) # Weibull shape parameters
+  sc0 <- matrix(quantile(SL, c(0.15, 0.25, 0.35,
+                               0.85, 0.75, 0.65)),ncol=2)
+  sh0 <- matrix(c(0.1,10,1,1), ncol=2,byrow=TRUE) # Weibull shape parameters
   TA_T <- TA_C[TA>quantile(TA, 0.25) & TA<quantile(TA, 0.75)]
   r0 <- max(mle.wrappedcauchy(TA_T, mu=circular(0))$rho,1e-20)
   
-  par0 <- cbind(rep(lam0[,1],nrow(sc0)),rep(lam0[,2],nrow(sc0)),
-                rep(sc0[,1],each=nrow(lam0)),rep(sc0[,2],each=nrow(lam0)),
-                sh0[1],sh0[2],r0)
+  par0 <- cbind(rep(lam0[,1], nrow(sc0)*nrow(sh0)*length(r0)),
+                rep(lam0[,2], nrow(sc0)*nrow(sh0)*length(r0)),
+                rep(sc0[,1],each=nrow(lam0)),
+                rep(sc0[,2],each=nrow(lam0)),
+                rep(sh0[,1],each=nrow(sc0)*nrow(lam0)),
+                rep(sh0[,2],each=nrow(sc0)*nrow(lam0)),
+                rep(r0,each=nrow(sc0)*nrow(lam0)*nrow(sh0)))
   
   
   # Creating a matrix that will save the minimiztion results
@@ -496,24 +501,30 @@ mnllHSMMp <- function(SL, TA, TA_C, missL, notMisLoc){
   colnames(mnll) <- c("laI", "laE", "scI", "scE", "shI", "shE", "rE", "mnll")
   
   for(i in 1:nrow(par0)){
-    mnllRes <- tryCatch(optim(transParHSMMp(par0[i,]), nllHSMMp, SL=SL, TA=TA, parF=parF),
+    mnllRes <- tryCatch(optim(transParHSMMp(par0[i,]), nllHSMMp, SL=SL, TA=TA, parF=parF, hessian =TRUE),
                         error=function(e) list("par"=rep(NA,7),'value'=NA))
-    mnll[i,1:7] <- itransParHSMMp(mnllRes$par)
-    mnll[i,'mnll'] <- mnllRes$value
+    # Check the values is a good minimum
+    if(all(eigen(mnllRes$hessian)$values > 0)){
+      mnll[i,1:7] <- itransParHSMMp(mnllRes$par)
+      mnll[i,'mnll'] <- mnllRes$value  
+    }
   }
   mnll <- mnll[which.min(mnll[,'mnll']),]
   #########################
   # This HSMM is hard to minimise, so add extra step for minimisation
-  mnllRes <- tryCatch(optim(transParHSMMp(mnll[1:7]), nllHSMMp, SL=SL, TA=TA, parF=parF),
+  mnllRes <- tryCatch(optim(transParHSMMp(mnll[1:7]), nllHSMMp, SL=SL, TA=TA, parF=parF, hessian =TRUE),
                       error=function(e) list("par"=rep(NA,7),'value'=NA))
-  if(!is.na(mnllRes$value)){
-    while(!is.na(mnllRes$value) & mnllRes$value < mnll['mnll']){
+
+  if(!is.na(mnllRes$value) & all(eigen(mnllRes$hessian)$values > 0)){
+    while(!is.na(mnllRes$value) & all(eigen(mnllRes$hessian)$values > 0) &
+          mnllRes$value < mnll['mnll']){
       mnll[1:7] <- itransParHSMMp(mnllRes$par)
       mnll['mnll'] <- mnllRes$value
-      mnllRes <- tryCatch(optim(transParHSMMp(mnll[1:7]), nllHSMMp, SL=SL, TA=TA, parF=parF),
+      mnllRes <- tryCatch(optim(transParHSMMp(mnll[1:7]), nllHSMMp, SL=SL, TA=TA, parF=parF, hessian =TRUE),
                           error=function(e) list("par"=rep(NA,7),'value'=NA))
     }
-    if(!is.na(mnllRes$value) & mnllRes$value <= mnll['mnll']){
+    if(!is.na(mnllRes$value) & all(eigen(mnllRes$hessian)$values > 0) &
+      mnllRes$value <= mnll['mnll']){
       mnll[1:7] <- itransParHSMMp(mnllRes$par)
       mnll['mnll'] <- mnllRes$value  
     }  
