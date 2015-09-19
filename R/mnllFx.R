@@ -483,7 +483,7 @@ mnllHSMMp <- function(SL, TA, TA_C, missL, notMisLoc){
   lam0 <- matrix(c(0.5,0.5,1,1,5,5,10,10,0.1,10,10,0.1,5,10,10,5),ncol=2, byrow=TRUE) # mean number of step in behaviour
   sc0 <- matrix(quantile(SL, c(0.15, 0.25, 0.35,
                                0.85, 0.75, 0.65)),ncol=2)
-  sh0 <- matrix(c(0.1,10,1,1), ncol=2,byrow=TRUE) # Weibull shape parameters
+  sh0 <- matrix(c(0.1,10,10,0.1,1,1), ncol=2,byrow=TRUE) # Weibull shape parameters
   TA_T <- TA_C[TA>quantile(TA, 0.25) & TA<quantile(TA, 0.75)]
   r0 <- max(mle.wrappedcauchy(TA_T, mu=circular(0))$rho,1e-20)
   
@@ -502,7 +502,8 @@ mnllHSMMp <- function(SL, TA, TA_C, missL, notMisLoc){
   
   for(i in 1:nrow(par0)){
     mnllRes <- tryCatch(optim(transParHSMMp(par0[i,]), nllHSMMp, SL=SL, TA=TA, parF=parF, hessian =TRUE),
-                        error=function(e) list("par"=rep(NA,7),'value'=NA))
+                        error=function(e) list("par"=rep(NA,7),'value'=NA,
+                                               'hessian' = matrix(0, nrow=7,ncol=7)))
     # Check the values is a good minimum
     if(all(eigen(mnllRes$hessian)$values > 0)){
       mnll[i,1:7] <- itransParHSMMp(mnllRes$par)
@@ -513,7 +514,8 @@ mnllHSMMp <- function(SL, TA, TA_C, missL, notMisLoc){
   #########################
   # This HSMM is hard to minimise, so add extra step for minimisation
   mnllRes <- tryCatch(optim(transParHSMMp(mnll[1:7]), nllHSMMp, SL=SL, TA=TA, parF=parF, hessian =TRUE),
-                      error=function(e) list("par"=rep(NA,7),'value'=NA))
+                      error=function(e) list("par"=rep(NA,7),'value'=NA,
+                                             'hessian' = matrix(0, nrow=7,ncol=7)))
 
   if(!is.na(mnllRes$value) & all(eigen(mnllRes$hessian)$values > 0)){
     while(!is.na(mnllRes$value) & all(eigen(mnllRes$hessian)$values > 0) &
@@ -521,7 +523,8 @@ mnllHSMMp <- function(SL, TA, TA_C, missL, notMisLoc){
       mnll[1:7] <- itransParHSMMp(mnllRes$par)
       mnll['mnll'] <- mnllRes$value
       mnllRes <- tryCatch(optim(transParHSMMp(mnll[1:7]), nllHSMMp, SL=SL, TA=TA, parF=parF, hessian =TRUE),
-                          error=function(e) list("par"=rep(NA,7),'value'=NA))
+                          error=function(e) list("par"=rep(NA,7),'value'=NA,
+                                                 'hessian' = matrix(0, nrow=7,ncol=7)))
     }
     if(!is.na(mnllRes$value) & all(eigen(mnllRes$hessian)$values > 0) &
       mnllRes$value <= mnll['mnll']){
@@ -530,7 +533,7 @@ mnllHSMMp <- function(SL, TA, TA_C, missL, notMisLoc){
     }  
   }
   
-  if (length(mnll)==0){ # In case no minimization was able to get good values
+  if(length(mnll)==0){ # In case no minimization was able to get good values
     mleHSMM <- rep(NA,10)
     names(mleHSMM) <- c("laI", "laE", "scI", "scE", "shI", "shE", "rE", "mnll", "AIC", "AICc")
   }else{
