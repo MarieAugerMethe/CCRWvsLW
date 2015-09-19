@@ -150,7 +150,8 @@ pwrcauchy <- function(TA,mu,rho){
 
 # function that test the absolut fit
 
-pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,graph,Uinfo=FALSE,dn=FALSE, ww=FALSE, hs=FALSE, hsl=FALSE){
+pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,graph, Uinfo=FALSE,
+                   dn=FALSE, ww=FALSE, hs=FALSE, hsl=FALSE, hsp=FALSE){
   
 	##########################################################
 	# Pseudo residuals
@@ -261,6 +262,20 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
     Z <- cbind(Z, pseudo.u.test(U_TA_HSMMl, 1, n, graphL[8], "TA"))
     colnames(Z)[ncol(Z)] <- "TA_HSMMl"
   }
+  
+  if(hsp){
+    whp <- HSMMpwi(SL, TA, missL, notMisLoc, mleMov$HSMMp[1:2], mleMov$HSMMp[3:4], mleMov$HSMMp[5:6], mleMov$HSMMp[7])
+    U_SL_HSMMp <- whp[1,notMisLoc] * pweibull(SL,mleMov$HSMMp[5],mleMov$HSMMp[3]) +
+      whp[2,notMisLoc] * pweibull(SL,mleMov$HSMMp[6],mleMov$HSMMp[4])
+    
+    U_TA_HSMMp <- whp[1,notMisLoc] * pwrcauchy(TA, 0, 0) +
+      whp[2,notMisLoc] * pwrcauchy(TA, 0, mleMov$HSMMp[7])
+    pP <- which(substring(names(mods), 1,nchar(names(mods))-5) == "HSMMp")
+    Z <- cbind(Z, pseudo.u.test(U_SL_HSMMp, 4, n, graphL[pP], "SL"))
+    colnames(Z)[ncol(Z)] <- "SL_HSMMp"
+    Z <- cbind(Z, pseudo.u.test(U_TA_HSMMp, 1, n, graphL[pP], "TA"))
+    colnames(Z)[ncol(Z)] <- "TA_HSMMp"
+  }
   #####
   # SL
   
@@ -352,23 +367,33 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
 	  PR <- cbind(PR, t(combP(Z[2,"SL_HSMMl"],Z[2,"TA_HSMMl"])))
 	  colnames(PR)[ncol(PR)] <- "HSMMl"
 	}
+	
+	if(hsp){
+	  PR <- cbind(PR, t(combP(Z[2,"SL_HSMMp"],Z[2,"TA_HSMMp"])))
+	  colnames(PR)[ncol(PR)] <- "HSMMp"
+	}
 
   if(PRdetails & Uinfo){
-    return(list('PR'=PR,'Z'=Z, 
-                'U'= cbind(U_SL_CCRW, U_LW, U_TLW, U_E, U_TE,
-                           U_TA_CCRW, U_U, U_VM)))
+    res <- list('PR'=PR,'Z'=Z, 
+         'U'= cbind(U_SL_CCRW, U_LW, U_TLW, U_E, U_TE,
+                    U_TA_CCRW, U_U, U_VM))
+    if(exists("U_SL_CCRWww")){res$U <- cbind(res$U,U_SL_CCRWww,U_TA_CCRWww)}
+    if(exists("U_SL_HSMM")){res$U <- cbind(res$U,U_SL_HSMM,U_TA_HSMM)}
+    if(exists("U_SL_HSMMs")){res$U <- cbind(res$U,U_SL_HSMMs,U_TA_HSMMs)}
+    if(exists("U_SL_HSMMl")){res$U <- cbind(res$U,U_SL_HSMMl,U_TA_HSMMl)}
+    if(exists("U_SL_HSMMp")){res$U <- cbind(res$U,U_SL_HSMMp,U_TA_HSMMp)}
+    return(res)
   }else if(PRdetails){
     return(list('PR'=PR,'Z'=Z))
   }else if(Uinfo){
-    if(ww){
-      res <- list('PR'=PR, 
-                  'U'= cbind(U_SL_CCRW, U_LW, U_TLW, U_E, U_TE,
-                             U_TA_CCRW, U_U, U_VM, U_SL_CCRWww, U_TA_CCRWww)) 
-    }else{
-      res <- list('PR'=PR, 
-                  'U'= cbind(U_SL_CCRW, U_LW, U_TLW, U_E, U_TE,
-                             U_TA_CCRW, U_U, U_VM))  
-    }
+    res <- list('PR'=PR, 
+                'U'= cbind(U_SL_CCRW, U_LW, U_TLW, U_E, U_TE,
+                           U_TA_CCRW, U_U, U_VM))
+    if(exists("U_SL_CCRWww")){res$U <- cbind(res$U,U_SL_CCRWww,U_TA_CCRWww)}
+    if(exists("U_SL_HSMM")){res$U <- cbind(res$U,U_SL_HSMM,U_TA_HSMM)}
+    if(exists("U_SL_HSMMs")){res$U <- cbind(res$U,U_SL_HSMMs,U_TA_HSMMs)}
+    if(exists("U_SL_HSMMl")){res$U <- cbind(res$U,U_SL_HSMMl,U_TA_HSMMl)}
+    if(exists("U_SL_HSMMp")){res$U <- cbind(res$U,U_SL_HSMMp,U_TA_HSMMp)}
     return(res)
   }else{
     return(PR) 
