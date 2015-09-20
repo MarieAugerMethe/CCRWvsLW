@@ -221,3 +221,5 @@ rangeB <- cbind(movResHSMMp$CI$HSMMp[,2]*0.5,movResHSMMp$CI$HSMMp[,3]*1.3)
 ciPL <- ciHSMMgpl(mov, movResHSMMp$mle$HSMMp,
                   rangePar=rangeB, B=15, nPar=7, transPar=transParHSMMp, NLL=nllHSMMp)
 ciPL
+# Look at test of absolute fit
+round(movResHSMMp$pseudoRes$PR["pval",],3)

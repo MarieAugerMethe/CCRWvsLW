@@ -264,12 +264,13 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
   }
   
   if(hsp){
-    whp <- HSMMpwi(SL, TA, missL, notMisLoc, mleMov$HSMMp[1:2], mleMov$HSMMp[3:4], mleMov$HSMMp[5:6], mleMov$HSMMp[7])
+    whp <- tryCatch(HSMMpwi(SL, TA, missL, notMisLoc, mleMov$HSMMp[1:2], mleMov$HSMMp[3:4], mleMov$HSMMp[5:6], mleMov$HSMMp[7]),
+            error=function(e){matrix(0, nrow=2,ncol=notMisLoc[length(notMisLoc)])})
     U_SL_HSMMp <- whp[1,notMisLoc] * pweibull(SL,mleMov$HSMMp[5],mleMov$HSMMp[3]) +
       whp[2,notMisLoc] * pweibull(SL,mleMov$HSMMp[6],mleMov$HSMMp[4])
     
     U_TA_HSMMp <- whp[1,notMisLoc] * pwrcauchy(TA, 0, 0) +
-      whp[2,notMisLoc] * pwrcauchy(TA, 0, mleMov$HSMMp[7])
+      whp[2,notMisLoc] * tryCatch(pwrcauchy(TA, 0, mleMov$HSMMp[7]),error=function(e){NA})
     pP <- which(substring(names(mods), 1,nchar(names(mods))-5) == "HSMMp")
     Z <- cbind(Z, pseudo.u.test(U_SL_HSMMp, 4, n, graphL[pP], "SL"))
     colnames(Z)[ncol(Z)] <- "SL_HSMMp"
