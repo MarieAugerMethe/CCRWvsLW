@@ -474,28 +474,30 @@ mnllHSMMs <- function(SL, TA, TA_C, missL, notMisLoc){
 #########
 # HSMM but with poisson instead of negative binomial
 
-mnllHSMMp <- function(SL, TA, TA_C, missL, notMisLoc){
+mnllHSMMp <- function(SL, TA, TA_C, missL, notMisLoc, parS=NULL){
   ########################################
   # Parameters used accros models
   parF <- list("missL"=missL, "notMisLoc"=notMisLoc, "m"=c(10,10))
   
-  # Initial parameter for numerical minimasation
-  lam0 <- matrix(c(0.5,0.5,1,1,5,5,10,10,0.1,10,10,0.1,5,10,10,5),ncol=2, byrow=TRUE) # mean number of step in behaviour
-  sc0 <- matrix(quantile(SL, c(0.15, 0.25, 0.35,
-                               0.85, 0.75, 0.65)),ncol=2)
-  sh0 <- matrix(c(0.1,10,10,0.1,1,1), ncol=2,byrow=TRUE) # Weibull shape parameters
-  TA_T <- TA_C[TA>quantile(TA, 0.25) & TA<quantile(TA, 0.75)]
-  r0 <- max(mle.wrappedcauchy(TA_T, mu=circular(0))$rho,1e-20)
-  
-  par0 <- cbind(rep(lam0[,1], nrow(sc0)*nrow(sh0)*length(r0)),
-                rep(lam0[,2], nrow(sc0)*nrow(sh0)*length(r0)),
-                rep(sc0[,1],each=nrow(lam0)),
-                rep(sc0[,2],each=nrow(lam0)),
-                rep(sh0[,1],each=nrow(sc0)*nrow(lam0)),
-                rep(sh0[,2],each=nrow(sc0)*nrow(lam0)),
-                rep(r0,each=nrow(sc0)*nrow(lam0)*nrow(sh0)))
-  
-  
+  if(is.null(parS)){ # If not setting the initial parameters by hand
+    # Initial parameter for numerical minimasation
+    lam0 <- matrix(c(0.5,0.5,1,1,5,5,10,10,0.1,10,10,0.1,5,10,10,5),ncol=2, byrow=TRUE) # mean number of step in behaviour
+    sc0 <- matrix(quantile(SL, c(0.15, 0.25, 0.35,
+                                 0.85, 0.75, 0.65)),ncol=2)
+    sh0 <- matrix(c(0.1,10,10,20,20,0.1,1,1), ncol=2,byrow=TRUE) # Weibull shape parameters
+    TA_T <- TA_C[TA>quantile(TA, 0.25) & TA<quantile(TA, 0.75)]
+    r0 <- max(mle.wrappedcauchy(TA_T, mu=circular(0))$rho,1e-20)
+    
+    par0 <- cbind(rep(lam0[,1], nrow(sc0)*nrow(sh0)*length(r0)),
+                  rep(lam0[,2], nrow(sc0)*nrow(sh0)*length(r0)),
+                  rep(sc0[,1],each=nrow(lam0)),
+                  rep(sc0[,2],each=nrow(lam0)),
+                  rep(sh0[,1],each=nrow(sc0)*nrow(lam0)),
+                  rep(sh0[,2],each=nrow(sc0)*nrow(lam0)),
+                  rep(r0,each=nrow(sc0)*nrow(lam0)*nrow(sh0)))
+  }else{
+    par0 <- matrix(parS,ncol=7)
+  }
   # Creating a matrix that will save the minimiztion results
   mnll <- matrix(NA, ncol=8, nrow=nrow(par0))
   colnames(mnll) <- c("laI", "laE", "scI", "scE", "shI", "shE", "rE", "mnll")
