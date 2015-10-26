@@ -3,7 +3,7 @@
 # and this is because I'm assuming that SL and TA are independent
 # This assumption is not quite true for the CCRW
 # But I still think it's ok because th dependence is mainly
-# associaed with the behaviour and in both case the behaviour
+# associated with the behaviour and in both case the behaviour
 # is estimated with both the SL and TA
 # There are some special tricks with the CCRW see below for more info
 
@@ -116,6 +116,26 @@ ptexp <- function(SL,SLmin,SLmax,parTE){
          function(x) integrate(dtexp,SLmin,x,SLmin=SLmin,SLmax=SLmax,parTE=parTE)[[1]])
 }
 
+# Probability density function of truncated pareto
+dtpar <- function(SL, SLmin, SLmax, mu){
+  if(mu == 1){
+    pp <- (1/(log(SLmax) - log(SLmin)))*SL^{-mu}
+  }else{
+    pp <- ((mu-1)/(SLmin^(1-mu) - SLmax^(1-mu)))*SL^{-mu}
+  }
+  return(pp)
+}
+
+ptpar <- function(SL,SLmin,SLmax,mu){
+  sapply(SL,
+         function(x) integrate(dtpar,SLmin,x,SLmin=SLmin,SLmax=SLmax,mu=mu)[[1]])
+}
+
+
+pwrcauchy <- function(TA,mu,rho){
+  sapply(TA,
+         function(x) integrate(dwrpcauchy,-pi,x,mu=mu,rho=rho)[[1]])
+}
 
 
 ##
@@ -130,21 +150,22 @@ ptexp <- function(SL,SLmin,SLmax,parTE){
 
 # function that test the absolut fit
 
-pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,graph,Uinfo=FALSE){
+pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,graph, Uinfo=FALSE,
+                   dn=FALSE, ww=FALSE, hs=FALSE, hsl=FALSE, hsp=FALSE){
   
 	##########################################################
 	# Pseudo residuals
 
   # If graph=TRUE get the best model
   # since only the pseudo residuals of the best model are shown
+  mods <- unlist(mleMov)[grep("AICc",names(unlist(mleMov)))]
+  # Order: CCRW, LW, TLW, BW, CRW, TBW, TCRW, (CCRWww)
   if(graph){
-    bestM <- grep("AICc",names(unlist(mleMov)))
-    # Order: CCRW, LW, TLW, BW, CRW, TBW, TCRW
-    bestM <- which.min(unlist(mleMov)[bestM])
-    graph <- rep(FALSE,7)
-    graph[bestM] <- TRUE
+    graphL <- rep(FALSE,length(mods))
+    bestM <- which.min(mods)
+    graphL[bestM] <- TRUE
   }else{
-    graph <- rep(FALSE,7)
+    graphL <- rep(FALSE,length(mods))
   }
   
   # By definition the SL that are corresponding to SLmin and SLmax
@@ -166,9 +187,14 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
   
   if(!any(is.na(mleMov$CCRW[1:6]))){
     gamm <- matrix(c(mleMov$CCRW[1], 1-mleMov$CCRW[2], 1-mleMov$CCRW[1], mleMov$CCRW[2]),2)
-    w <- HMMwi(SL,TA,missL,SLmin,
-      mleMov$CCRW[3:4], mleMov$CCRW[5], gamm, mleMov$CCRW[6:7], notMisLoc)
-    
+    if(dn){
+      w <- HMMwi(SL,TA,missL,SLmin,
+                 mleMov$CCRW[3:4], mleMov$CCRW[5], gamm, mleMov$CCRW[8:9], notMisLoc)
+    }else{
+      w <- HMMwi(SL,TA,missL,SLmin,
+                            mleMov$CCRW[3:4], mleMov$CCRW[5], gamm, mleMov$CCRW[6:7], notMisLoc)
+    }
+   
     U_SL_CCRW <- w[1,notMisLoc] * pexp(SL-SLmin,mleMov$CCRW[3]) +
       w[2,notMisLoc] * pexp(SL-SLmin,mleMov$CCRW[4])
     
@@ -181,11 +207,76 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
     # each set of pseudo-residuals.
     # SO for SL, you have 3 parameters: minSL, lambda_T, lambda_F
     # SO for TA, you have 1 parameter: kappa_T
-    Z[,1] <- pseudo.u.test(U_SL_CCRW, 3, n, graph[1], "SL")
-    Z[,6] <- pseudo.u.test(U_TA_CCRW, 1, n, graph[1], "TA")
+    Z[,1] <- pseudo.u.test(U_SL_CCRW, 3, n, graphL[1], "SL")
+    Z[,6] <- pseudo.u.test(U_TA_CCRW, 1, n, graphL[1], "TA")
+    
+  }
+  
+  # Weibull and wrapped Cauchy
+  if(ww){
+    gammww <- matrix(c(mleMov$CCRWww[1], 1-mleMov$CCRWww[2], 1-mleMov$CCRWww[1], mleMov$CCRWww[2]),2)
+    www <- HMMwiww(SL, TA, missL, 
+                   mleMov$CCRWww[5:6], mleMov$CCRWww[3:4], mleMov$CCRWww[7], gammww, mleMov$CCRWww[9:10],
+                   notMisLoc)
+    U_SL_CCRWww <- www[1,notMisLoc] * pweibull(SL,mleMov$CCRWww[5],mleMov$CCRWww[3]) +
+      www[2,notMisLoc] * pweibull(SL,mleMov$CCRWww[6],mleMov$CCRWww[4])
+    
+    U_TA_CCRWww <- www[1,notMisLoc] * pwrcauchy(TA, 0, 0) +
+      www[2,notMisLoc] * pwrcauchy(TA, 0, mleMov$CCRWww[7])
+    # Although I'm estimated 7 parameters in total for the CCRWww
+    # and all parameters are used to identify the expected behavioral state
+    # I'm only taking into acount the parameters that trully are associated with
+    # each set of pseudo-residuals.
+    # SO for SL, you have 4 parameters: scI, scE, shI, shE
+    # SO for TA, you have 1 parameter: rE
+    Z <- cbind(Z, pseudo.u.test(U_SL_CCRWww, 4, n, graphL[8], "SL"))
+    colnames(Z)[ncol(Z)] <- "SL_CCRWww"
+    Z <- cbind(Z, pseudo.u.test(U_TA_CCRWww, 1, n, graphL[8], "TA"))
+    colnames(Z)[ncol(Z)] <- "TA_CCRWww"
+  }
+  
+  # Weibull and wrapped Cauchy
+  if(hs){
+    whs <- HSMMwi(SL, TA, missL, notMisLoc, mleMov$HSMM[1:2], mleMov$HSMM[3:4], mleMov$HSMM[5:6], mleMov$HSMM[7:8], mleMov$HSMM[9])
+    U_SL_HSMM <- whs[1,notMisLoc] * pweibull(SL,mleMov$HSMM[7],mleMov$HSMM[5]) +
+      whs[2,notMisLoc] * pweibull(SL,mleMov$HSMM[8],mleMov$HSMM[6])
+    
+    U_TA_HSMM <- whs[1,notMisLoc] * pwrcauchy(TA, 0, 0) +
+      whs[2,notMisLoc] * pwrcauchy(TA, 0, mleMov$HSMM[9])
+    Z <- cbind(Z, pseudo.u.test(U_SL_HSMM, 4, n, graphL[8], "SL"))
+    colnames(Z)[ncol(Z)] <- "SL_HSMM"
+    Z <- cbind(Z, pseudo.u.test(U_TA_HSMM, 1, n, graphL[8], "TA"))
+    colnames(Z)[ncol(Z)] <- "TA_HSMM"
   }
 
   
+  if(hsl){
+    whs <- HSMMwi(SL, TA, missL, notMisLoc, mleMov$HSMMl[1:2], mleMov$HSMMl[rep(3,2)], mleMov$HSMMl[4:5], mleMov$HSMMl[6:7], mleMov$HSMMl[8])
+    U_SL_HSMMl <- whs[1,notMisLoc] * pweibull(SL,mleMov$HSMMl[6],mleMov$HSMMl[4]) +
+      whs[2,notMisLoc] * pweibull(SL,mleMov$HSMMl[7],mleMov$HSMMl[5])
+    
+    U_TA_HSMMl <- whs[1,notMisLoc] * pwrcauchy(TA, 0, 0) +
+      whs[2,notMisLoc] * pwrcauchy(TA, 0, mleMov$HSMMl[8])
+    Z <- cbind(Z, pseudo.u.test(U_SL_HSMMl, 4, n, graphL[8], "SL"))
+    colnames(Z)[ncol(Z)] <- "SL_HSMMl"
+    Z <- cbind(Z, pseudo.u.test(U_TA_HSMMl, 1, n, graphL[8], "TA"))
+    colnames(Z)[ncol(Z)] <- "TA_HSMMl"
+  }
+  
+  if(hsp){
+    whp <- tryCatch(HSMMpwi(SL, TA, missL, notMisLoc, mleMov$HSMMp[1:2], mleMov$HSMMp[3:4], mleMov$HSMMp[5:6], mleMov$HSMMp[7]),
+            error=function(e){matrix(0, nrow=2,ncol=notMisLoc[length(notMisLoc)])})
+    U_SL_HSMMp <- whp[1,notMisLoc] * pweibull(SL,mleMov$HSMMp[5],mleMov$HSMMp[3]) +
+      whp[2,notMisLoc] * pweibull(SL,mleMov$HSMMp[6],mleMov$HSMMp[4])
+    
+    U_TA_HSMMp <- whp[1,notMisLoc] * pwrcauchy(TA, 0, 0) +
+      whp[2,notMisLoc] * tryCatch(pwrcauchy(TA, 0, mleMov$HSMMp[7]),error=function(e){NA})
+    pP <- which(substring(names(mods), 1,nchar(names(mods))-5) == "HSMMp")
+    Z <- cbind(Z, pseudo.u.test(U_SL_HSMMp, 4, n, graphL[pP], "SL"))
+    colnames(Z)[ncol(Z)] <- "SL_HSMMp"
+    Z <- cbind(Z, pseudo.u.test(U_TA_HSMMp, 1, n, graphL[pP], "TA"))
+    colnames(Z)[ncol(Z)] <- "TA_HSMMp"
+  }
   #####
   # SL
   
@@ -197,7 +288,7 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
 	##
 	# TLW
 
-	U_TLW <- ptruncpareto(SL,SLmin,SLmax,mleMov$TLW[1]-1) # Used to be ptpareto
+	U_TLW <- ptpar(SL,SLmin,SLmax,mleMov$TLW[1]) # Used to be ptpareto
 
 	##
 	# E
@@ -208,7 +299,6 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
 	##
 	# TE
 	# For both TBW and TCRW
-
 	U_TE <- ptexp(SL,SLmin,SLmax,mleMov$TBW[1])
 
 
@@ -233,27 +323,25 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
 	##########################################################
 	# Normal pseudo residuals
 
-
-
 	######################
 	# SL
 	
   # nP = SLmin + mu
-	Z[,2] <- pseudo.u.test(U_LW,2,n,graph[2],"SL")
+	Z[,2] <- pseudo.u.test(U_LW,2,n,graphL[2],"SL")
   # nP = SLmin + mu + SLmax
-	Z[,3] <- pseudo.u.test(U_TLW,3,n,graph[3],"SL")
+	Z[,3] <- pseudo.u.test(U_TLW,3,n,graphL[3],"SL")
   # nP = SLmin + lambda
-	Z[,4] <- pseudo.u.test(U_E,2,n,graph[4]|graph[5],"SL")
+	Z[,4] <- pseudo.u.test(U_E,2,n,graphL[4]|graphL[5],"SL")
   # nP = SLmin + lambda + SLmax
-	Z[,5] <- pseudo.u.test(U_TE,3,n,graph[6]|graph[7],"SL")
+	Z[,5] <- pseudo.u.test(U_TE,3,n,graphL[6]|graphL[7],"SL")
 
 	######################
 	# TA
   
   # nP = nothing!
-	Z[,7] <- pseudo.u.test(U_U,0,n,graph[2]|graph[3]|graph[4]|graph[6],"TA")
+	Z[,7] <- pseudo.u.test(U_U,0,n,graphL[2]|graphL[3]|graphL[4]|graphL[6],"TA")
   # nP = kapa
-	Z[,8] <- pseudo.u.test(U_VM,1,n,graph[5]|graph[7],"TA")
+	Z[,8] <- pseudo.u.test(U_VM,1,n,graphL[5]|graphL[7],"TA")
 
 	PR <- matrix(NA,2,7)
 	colnames(PR) <- c('CCRW', 'LW', 'TLW', 'BW', 'CRW', 'TBW', 'TCRW')
@@ -265,17 +353,49 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
 	PR[,5] <- combP(Z[2,4],Z[2,8]) # CRW
 	PR[,6] <- combP(Z[2,5],Z[2,7]) # TBW
 	PR[,7] <- combP(Z[2,5],Z[2,8]) # TCRW
+	if(ww){
+	  PR <- cbind(PR, t(combP(Z[2,"SL_CCRWww"],Z[2,"TA_CCRWww"])))
+	  colnames(PR)[ncol(PR)] <- "CCRWww"
+	}
+	
+	if(hs){
+	  PR <- cbind(PR, t(combP(Z[2,"SL_HSMM"],Z[2,"TA_HSMM"])))
+	  colnames(PR)[ncol(PR)] <- "HSMM"
+	}
+	
+	
+	if(hsl){
+	  PR <- cbind(PR, t(combP(Z[2,"SL_HSMMl"],Z[2,"TA_HSMMl"])))
+	  colnames(PR)[ncol(PR)] <- "HSMMl"
+	}
+	
+	if(hsp){
+	  PR <- cbind(PR, t(combP(Z[2,"SL_HSMMp"],Z[2,"TA_HSMMp"])))
+	  colnames(PR)[ncol(PR)] <- "HSMMp"
+	}
 
   if(PRdetails & Uinfo){
-    return(list('PR'=PR,'Z'=Z, 
-                'U'= cbind(U_SL_CCRW, U_LW, U_TLW, U_E, U_TE,
-                           U_TA_CCRW, U_U, U_VM)))
+    res <- list('PR'=PR,'Z'=Z, 
+         'U'= cbind(U_SL_CCRW, U_LW, U_TLW, U_E, U_TE,
+                    U_TA_CCRW, U_U, U_VM))
+    if(exists("U_SL_CCRWww")){res$U <- cbind(res$U,U_SL_CCRWww,U_TA_CCRWww)}
+    if(exists("U_SL_HSMM")){res$U <- cbind(res$U,U_SL_HSMM,U_TA_HSMM)}
+    if(exists("U_SL_HSMMs")){res$U <- cbind(res$U,U_SL_HSMMs,U_TA_HSMMs)}
+    if(exists("U_SL_HSMMl")){res$U <- cbind(res$U,U_SL_HSMMl,U_TA_HSMMl)}
+    if(exists("U_SL_HSMMp")){res$U <- cbind(res$U,U_SL_HSMMp,U_TA_HSMMp)}
+    return(res)
   }else if(PRdetails){
     return(list('PR'=PR,'Z'=Z))
   }else if(Uinfo){
-    return(list('PR'=PR, 
+    res <- list('PR'=PR, 
                 'U'= cbind(U_SL_CCRW, U_LW, U_TLW, U_E, U_TE,
-                           U_TA_CCRW, U_U, U_VM)))
+                           U_TA_CCRW, U_U, U_VM))
+    if(exists("U_SL_CCRWww")){res$U <- cbind(res$U,U_SL_CCRWww,U_TA_CCRWww)}
+    if(exists("U_SL_HSMM")){res$U <- cbind(res$U,U_SL_HSMM,U_TA_HSMM)}
+    if(exists("U_SL_HSMMs")){res$U <- cbind(res$U,U_SL_HSMMs,U_TA_HSMMs)}
+    if(exists("U_SL_HSMMl")){res$U <- cbind(res$U,U_SL_HSMMl,U_TA_HSMMl)}
+    if(exists("U_SL_HSMMp")){res$U <- cbind(res$U,U_SL_HSMMp,U_TA_HSMMp)}
+    return(res)
   }else{
     return(PR) 
   }

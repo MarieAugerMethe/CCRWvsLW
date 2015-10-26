@@ -3,7 +3,8 @@
 # Date created: March 28, 2011
 # Updated: April 3, 2013
 
-movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0){
+movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=TRUE, dn=FALSE, 
+                           ww=FALSE, hs=FALSE, hsl=FALSE, hss=FALSE, hsp=FALSE){
   
   #######################################
   # This script estimates the parameters and calculates the AIC of multiple movement models:
@@ -65,12 +66,15 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0){
   
   ######################
   # Finding the mle
-  
-  mleCCRW <- mnllCCRW(SL, TA, TA_C, missL, notMisLoc, SLmin)
+  if(dn){
+    mleCCRW <- mnllCCRWdn(SL, TA, TA_C, missL, SLmin)
+  }else{
+    mleCCRW <- mnllCCRW(SL, TA, TA_C, missL, notMisLoc, SLmin) 
+  }
   
   mleLW <- mnllLW(SL, TA, SLmin)
   
-  mleTLW <- mnllTLW(SL, TA, SLmin, SLmax)
+  mleTLW <- mnllTLW(SL, TA, SLmin, SLmax, conts)
   
   mleBW <- mnllBW(SL, TA, SLmin)
   
@@ -86,6 +90,31 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0){
   mleMov <- list(mleCCRW, mleLW, mleTLW, mleBW, mleCRW, mleTBW, mleTCRW)
   names(mleMov) <- c("CCRW", "LW", "TLW", "BW", "CRW", "TBW", "TCRW")
 
+  if(ww){
+    mleCCRWww <- mnllCCRWww(SL, TA, TA_C, missL)
+    mleMov$CCRWww <- mleCCRWww
+  }
+  
+  if(hs){
+    mleHSMM <- mnllHSMM(SL, TA, TA_C, missL, notMisLoc)  
+    mleMov$HSMM <- mleHSMM
+  }
+  
+  if(hsl){
+    mleHSMMl <- mnllHSMMl(SL, TA, TA_C, missL, notMisLoc)  
+    mleMov$HSMMl <- mleHSMMl
+  }
+  
+  if(hss){
+    mleHSMMs <- mnllHSMMs(SL, TA, TA_C, missL, notMisLoc)  
+    mleMov$HSMMs <- mleHSMMs
+  }
+  
+  if(hsp){
+    mleHSMMp <- mnllHSMMp(SL, TA, TA_C, missL, notMisLoc)  
+    mleMov$HSMMp <- mleHSMMp
+  }
+  
   ######################
   # Calculating the CI
   
@@ -99,7 +128,11 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0){
   names(CI) <- c(names(mleMov[1:3]),"E", "TE", "K")
   
   # CCRW
-  CI[['CCRW']] <- ciCCRW(SL, TA, SLmin, missL, notMisLoc, mleCCRW)
+  if(dn){
+    CI[['CCRW']] <- ciCCRWdn(SL, TA, SLmin, missL, mleCCRW)
+  }else{
+    CI[['CCRW']] <- ciCCRW(SL, TA, SLmin, missL, notMisLoc, mleCCRW)
+  }
   
   # LW
   CI[['LW']] <- ciLW(SL, TA, SLmin, mleLW)
@@ -116,18 +149,60 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0){
   # K
   CI[['K']] <- ciK(SL, TA, SLmin, mleCRW)
   
+  if(ww){
+    CI$CCRWww <- ciCCRWww(SL,TA,missL,mleCCRWww)
+  }
+  
+  if(hs){
+    CI$HSMM <- ciHSMMg(SL, TA, missL, notMisLoc,
+                       mleHSMM, 9, nllHSMM, transParHSMM)
+  }
+  
+  if(hsl){
+    CI$HSMMl <- ciHSMMg(SL, TA, missL, notMisLoc,
+                        mleHSMMl, 8, nllHSMMl, transParHSMMl)
+  }
+  
+  if(hss){
+    CI$HSMMs <- ciHSMMg(SL, TA, missL, notMisLoc,
+                        mleHSMMs, 8, nllHSMMs, transParHSMMs)
+  }
+  
+  if(hsp){
+    CI$HSMMp <- ciHSMMg(SL, TA, missL, notMisLoc,
+                        mleHSMMp, 7, nllHSMMp, transParHSMMp)
+  }
+  
   #######
   # Test of absolute fit
 	pseudoRes <- pseudo(SL, TA_C, TA, SLmin, SLmax, missL, notMisLoc, n,
-                      mleMov, PRdetails, graph)
+                      mleMov, PRdetails, graph, dn=dn, ww=ww, hs=hs, hsl=hsl, hsp=hsp)
+  
+  
   
 	if(graph==TRUE){
-    #windows()
+	  # Plot the best CCRW if ww explored
+	  if(ww){
+	    wwB <- which.min(c(mleMov$CCRW["AICc"], mleMov$CCRWww["AICc"])) == 2
+	  }else{
+	    wwB <- FALSE
+	  }
     layout(matrix(1:3,nrow=1))
-    # Movemeth trajectory with CCRW 
-    gamm <- matrix(c(mleMov$CCRW[1], 1-mleMov$CCRW[2], 1-mleMov$CCRW[1], mleMov$CCRW[2]),2)
-    w <- HMMwi(SL,TA,missL,SLmin, mleMov$CCRW[3:4], mleMov$CCRW[5], gamm,
-                mleMov$CCRW[6:7], notMisLoc)
+    if(wwB){
+      gamm <- matrix(c(mleMov$CCRWww[1], 1-mleMov$CCRWww[2], 1-mleMov$CCRWww[1], mleMov$CCRWww[2]),2)
+      w <- HMMwiww(SL, TA, missL, 
+                     mleMov$CCRWww[5:6], mleMov$CCRWww[3:4], mleMov$CCRWww[7], gamm, mleMov$CCRWww[9:10],
+                     notMisLoc)
+    }else{
+      gamm <- matrix(c(mleMov$CCRW[1], 1-mleMov$CCRW[2], 1-mleMov$CCRW[1], mleMov$CCRW[2]),2)
+      if(dn){
+        w <- HMMwi(SL,TA,missL,SLmin, mleMov$CCRW[3:4], mleMov$CCRW[5], gamm,
+                   mleMov$CCRW[8:9], notMisLoc)
+      }else{
+        w <- HMMwi(SL,TA,missL,SLmin, mleMov$CCRW[3:4], mleMov$CCRW[5], gamm,
+                   mleMov$CCRW[6:7], notMisLoc)
+      }  
+    }
     plot(movltraj, addpoints=FALSE, final=FALSE)
     points(movltraj[[1]]$x,movltraj[[1]]$y,bg=c(0,grey(w[2,]),0),pch=21, cex=c(0,w[1,],0)+0.7)
 		# histogram with fit

@@ -5,7 +5,7 @@
 \title{Maximum likelihood estimation of the TLW}
 \description{Minimize the negative log-likelihood for the TLW.}
 \usage{
-mnllTLW(SL, TA, SLmin=min(SL), SLmax=max(SL))
+mnllTLW(SL, TA, SLmin=min(SL), SLmax=max(SL), conts=TRUE)
 nllTLW(SL,TA,mu,parF=list(SLmin=min(SL),SLmax=max(SL)))
 }
 \arguments{
@@ -15,6 +15,7 @@ nllTLW(SL,TA,mu,parF=list(SLmin=min(SL),SLmax=max(SL)))
   \item{SLmax}{one numeric value representing the maximum step length, default is the max(SL)}
   \item{mu}{one numeric value for parameter}
   \item{parF}{list for fix parameter values, see default}
+  \item{conts}{logical value stating whether to contrain mu between 1 and 3 (i.e. the values relevant for the Levy walk searching strategy)}
 }
 \details{The mnllTLW function numerically minimeze the negative log likelihood to estimate the parameter mu. Note that the parameter value is constrained between 1 and 3.
 
