@@ -221,6 +221,55 @@ HSMMp.lalphabeta <- function(SL,TA, missL, sh, sc, rE, gamma, notMisLoc,m = c(10
   list(la=lalpha, lb=lbeta)
 }
 
+## for HSMM with von Mises and exponential
+HSMMpo.lalphabeta <- function(SL,TA, missL, lam, kE, gamma, notMisLoc,m = c(10,10)){
+  SLmin <- min(SL)
+  delta <- solve(t(diag(sum(m))-gamma+1),rep(1,sum(m))) # Getting the probility of the first step - stationary distribution
+  
+  # This is the real length of the time series (include missing data)
+  n <- length(SL) + sum(missL-1)
+  
+  obsProb <- matrix(rep(1,sum(m)*n),nrow=n)
+  # Making a matrix with all the probability of observations for each state
+  # Note that for missing location observation probablility is 1
+  obsProb[notMisLoc,1:m[1]] <-  dexp(SL-SLmin, lam[1]) * dvm(TA, 0, 0)
+  obsProb[notMisLoc,(m[1]+1):sum(m)] <-  dexp(SL-SLmin, lam[2]) * dvm(TA, 0, kE)
+  
+  ###
+  # Initialising the alpha and beta vectors and creating a matrix will holds alpha and beta values for all t.
+  # Note that to limit the underflow problem we are evaluating them as log values. 
+  lalpha <- lbeta <- matrix(NA,sum(m),n)
+  
+  
+  foo <- delta  
+  lscale <- 0
+  for (i in 1:n){
+    foo <- foo%*%gamma*obsProb[i,]  
+    sumfoo <- sum(foo)
+    lscale <- lscale+log(sumfoo)
+    foo <- foo/sumfoo
+    lalpha[,i] <- log(foo) + lscale
+  }
+  
+  
+  # we also want the backward probability to get the expected values
+  # tr(beta_t) = gamma %*% obsProb_{t+1} %*% tr(beta{t+1}) %*% tr(1)
+  # I think similarly to alpha the betas are weighted
+  # psi_t = beta_t/w_t
+  # w_t = beta_t %*% tr(1)
+  lbeta[,n] <- rep(0,sum(m)) # beta_T = 1 so log(beta_T)=0 
+  foo <- rep(0.5,sum(m)) # beta_T/w_T =psi_T 
+  lscale <- log(sum(m)) # log(w_T)
+  for (i in (n-1):1){
+    foo <- gamma %*% (obsProb[i+1,]*foo) # gamma%*%P(x_{t+1}))*psi_{t+1} = beta_t/w_{t+1}
+    lbeta[,i] <- log(foo) + lscale # log(beta_t) - log(w_{t+1} + log(w_{t+1}) = log(beta_t)
+    sumfoo <- sum(foo) # w_t/w_{t+1}
+    foo <- foo/sumfoo # (beta_t/w_{t+1})/(w_t/w_{t+1}) = psi_t
+    lscale <- lscale + log(sumfoo) # log(w_{t+1}) + log(w_t) - log(w_{t+1}) = log(w_t)
+  }
+  list(la=lalpha, lb=lbeta)
+}
+
 # To be used in the pseudo-residual function
 # (and for a graph that show the probability of being in each behavior)
 # The weight function kind of calculates the probability of being in either behaviour
@@ -314,6 +363,27 @@ HSMMpwi<- function(SL, TA, missL, notMisLoc, lamb, sc, sh, rE, m=c(10,10)){
   return(w)
 }
 
+# for hsm with poisson and von Mises and exponential
+HSMMpowi<- function(SL, TA, missL, notMisLoc, lamb, lambda, kE, m=c(10,10)){
+  gamma <- gen.Gamma.pois(m,lamb) # Creating transition probility matrix
+  delta <- solve(t(diag(sum(m))-gamma+1),rep(1,sum(m))) # Getting the probility of the first step - stationary distribution
+  # This calculates the weights for the pseudo-residuals
+  n <- length(SL) + sum(missL-1)
+  fb <- HSMMpo.lalphabeta(SL, TA, missL, lambda, kE, gamma, notMisLoc)
+  la <- fb$la
+  lb <- fb$lb
+  la <- cbind(log(delta),la)
+  lafact <- apply(la,2,max)
+  lbfact <- apply(lb,2,max)
+  w <- matrix(NA,sum(m),n)
+  for (i in 1:n){
+    foo <- (exp(la[,i]-lafact[i])%*%gamma)*
+      exp(lb[,i]-lbfact[i])
+    w[,i] <- foo/sum(foo)
+  }
+  w <- rbind(colSums(w[1:m[1],]),colSums(w[(m[1]+1):sum(m),]))
+  return(w)
+}
 
 # This is the actual EM algorithm but formatted for the confidence interval
 EM_CCRW_HMM_CI <- function(SL,TA_N,x,missL,notMisLoc,parF,maxiter=300,tol=5e-5){
