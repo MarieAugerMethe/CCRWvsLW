@@ -2,19 +2,24 @@
 \alias{movLikelihoods}
 \docType{package}
 \title{Fit seven random walk models to a movement path}
-\description{Minimize the negative log-likelihood for the BW.}
+\description{Fit seven random walk models to a movement path}
 \usage{
-movLikelihoods(movltraj, graph = TRUE, PRdetails = FALSE, TAc = 0, conts=TRUE, dn=FALSE, ww=FALSE, hs=FALSE)
+movLikelihoods(movltraj, graph = TRUE, PRdetails = FALSE, TAc = 0, conts=TRUE, dn=FALSE, 
+                           ww=FALSE, hs=FALSE, hsl=FALSE, hss=FALSE, hsp=FALSE, hspo=FALSE)
 }
 \arguments{
   \item{movltraj}{one ltraj object containing the movement path}
   \item{graph}{one logical value that states whether the models should be plotted}
   \item{PRdetails}{one logical value that states whether the details of the pseudoresiduals should be returned}
   \item{TAc}{one numeric value for the threshold angle used in the local turn method}
-  \item{conts}{logical value stating whether to contrain mu between 1 and 3 (i.e. the values relevant for the Levy walk searching strategy)}
+  \item{conts}{logical value stating whether to constrain mu between 1 and 3 (i.e. the values relevant for the Levy walk searching strategy)}
   \item{dn}{logical value stating whether to direct numerical maximization of the log likelihood is used rather than the EM-algorithm for the CCRW. see details}
   \item{ww}{logical value stating whether to investigate the CCRW with weibull distributions for SL and wrapped cauchy for TA.}
-  \item{hs}{logical value stating whether to investigate the CCRW that is a hidden semi Markov model (HSMM) with weibull distributions for SL and wrapped cauchy for TA.}
+  \item{hs}{logical value stating whether to investigate the CCRW that is a hidden semi Markov model (HSMM) with weibull distributions for SL, wrapped cauchy for TA, and negative binomial for the state dwell time.}
+  \item{hsl}{logical value stating whether to investigate the CCRW that is a hidden semi Markov model (HSMM) with weibull distributions for SL, wrapped cauchy for TA, and negative binomial for the state dwell time (probility of the negative binomial is equal across behaviours).}
+  \item{hsl}{logical value stating whether to investigate the CCRW that is a hidden semi Markov model (HSMM) with weibull distributions for SL, wrapped cauchy for TA, and negative binomial for the state dwell time (size of the negative binomial is equal across behaviours).}
+  \item{hsp}{logical value stating whether to investigate the CCRW that is a hidden semi Markov model (HSMM) with weibull distributions for SL, wrapped cauchy for TA, and Poisson for the state dwell time.}
+    \item{hsp}{logical value stating whether to investigate the CCRW that is a hidden semi Markov model (HSMM) with exponential distributions for SL, von Mises for TA, and Poisson for the state dwell time.}
 }
 \details{movLikelihoods fits a CCRW, TLW, LW, BW, CRW, TBW, TCRW to a movement path.
 
