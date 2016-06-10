@@ -552,6 +552,82 @@ mnllHSMMp <- function(SL, TA, TA_C, missL, notMisLoc, parS=NULL){
   return(mleHSMM)
 }
 
+mnllHSMMpo <- function(SL, TA, TA_C, missL, notMisLoc, parS=NULL){
+  SLmin <- min(SL)
+  ########################################
+  # Parameters used accross models
+  parF <- list("missL"=missL, "notMisLoc"=notMisLoc, "m"=c(10,10))
+  
+  if(is.null(parS)){ # If not setting the initial parameters by hand
+    # Initial parameter for numerical minimasation
+    lam0 <- matrix(c(0.5,0.5,1,1,5,5,10,10,0.1,10,10,0.1,5,10,10,5),ncol=2, byrow=TRUE) # mean number of step in behaviour
+    l0 <- matrix(1/quantile((SL-SLmin), c(0.25, 0.50, 0.75, 0.50)),ncol=2)
+    TA_T <- TA_C[TA>quantile(TA, 0.25) & TA<quantile(TA, 0.75)]
+    k0 <- mle.vonmises(TA_T, mu=circular(0))$kappa
+    if(k0 == 0){k0 <- 0.01}
+    
+    par0 <- cbind(rep(lam0[,1], nrow(l0)*length(k0)),
+                  rep(lam0[,2], nrow(l0)*length(k0)),
+                  rep(l0[,1],each=nrow(lam0)),
+                  rep(l0[,2],each=nrow(lam0)),
+                  rep(k0,each=nrow(l0)*nrow(lam0)))
+  }else{
+    par0 <- matrix(parS,ncol=5)
+  }
+  # Creating a matrix that will save the minimiztion results
+  mnll <- matrix(NA, ncol=7, nrow=nrow(par0))
+  colnames(mnll) <- c("laI", "laE", "lI", "lE", "kE", "a", "mnll")
+  mnll[,'a'] <- SLmin
+  
+  for(i in 1:nrow(par0)){
+    mnllRes <- tryCatch(optim(transParHSMMpo(par0[i,]), nllHSMMpo, SL=SL, TA=TA, parF=parF, hessian =TRUE),
+                        error=function(e) list("par"=rep(NA,5),'value'=NA,
+                                               'hessian' = matrix(0, nrow=5,ncol=5)))
+    # Check the values is a good minimum
+    if(all(eigen(mnllRes$hessian)$values > 0)){
+      mnll[i,1:5] <- itransParHSMMpo(mnllRes$par)
+      mnll[i,'mnll'] <- mnllRes$value  
+    }
+  }
+  mnll <- mnll[which.min(mnll[,'mnll']),]
+  #########################
+  # This HSMM is hard to minimise, so add extra step for minimisation
+  mnllRes <- tryCatch(optim(transParHSMMpo(mnll[1:5]), nllHSMMpo, SL=SL, TA=TA, parF=parF, hessian =TRUE),
+                      error=function(e) list("par"=rep(NA,5),'value'=NA,
+                                             'hessian' = matrix(0, nrow=5,ncol=5)))
+  
+  if(!is.na(mnllRes$value) & all(eigen(mnllRes$hessian)$values > 0)){
+    while(!is.na(mnllRes$value) & all(eigen(mnllRes$hessian)$values > 0) &
+          mnllRes$value < mnll['mnll']){
+      mnll[1:5] <- itransParHSMMpo(mnllRes$par)
+      mnll['mnll'] <- mnllRes$value
+      mnllRes <- tryCatch(optim(transParHSMMpo(mnll[1:5]), nllHSMMpo, SL=SL, TA=TA, parF=parF, hessian =TRUE),
+                          error=function(e) list("par"=rep(NA,5),'value'=NA,
+                                                 'hessian' = matrix(0, nrow=5, ncol=5)))
+    }
+    if(!is.na(mnllRes$value) & all(eigen(mnllRes$hessian)$values > 0) &
+       mnllRes$value <= mnll['mnll']){
+      mnll[1:5] <- itransParHSMMpo(mnllRes$par)
+      mnll['mnll'] <- mnllRes$value  
+    }  
+  }
+  
+  if(length(mnll)==0){ # In case no minimization was able to get good values
+    mleHSMM <- rep(NA,9)
+    names(mleHSMM) <- c("laI", "laE", "lI", "lE", "kE", "a", "mnll", "AIC", "AICc")
+  }else{
+    # According to Burnham and Anderson (2002)
+    # AIC = 2*nll + 2*k
+    # AICc = AIC + 2*k*(k+1)/(n-K-1)
+    AICCCRW <- matrix(NA, ncol=2)
+    k <- length(par0[1,])+1
+    names(AICCCRW) <- c("AIC", "AICc")
+    AICCCRW[,1] <- 2*k + 2*mnll["mnll"]
+    AICCCRW[,2] <- AICCCRW[,1] + (2*k*(k+1))/(length(SL)-k-1)
+    mleHSMM <- c(mnll, AICCCRW)
+  }
+  return(mleHSMM)
+}
 
 
 ################################

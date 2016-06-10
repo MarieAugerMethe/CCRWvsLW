@@ -56,6 +56,11 @@ transParHSMMp <- function(x){
   return(x)
 }
 
+transParHSMMpo <- function(x){
+  x[1:5] <-  log(x[1:5] - .Machine$double.xmin)
+  return(x)
+}
+
 
 transParTBW <- function(x){log(x)}
 
@@ -95,5 +100,10 @@ itransParHSMMs <- function(x){
 itransParHSMMp <- function(x){
   x[1:6] <-  .Machine$double.xmin + exp(x[1:6])
   x[7] <- plogis(x[7])
+  return(x)
+}
+
+itransParHSMMpo <- function(x){
+  x[1:5] <-  .Machine$double.xmin + exp(x[1:5])
   return(x)
 }
