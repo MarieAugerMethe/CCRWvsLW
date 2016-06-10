@@ -151,7 +151,7 @@ pwrcauchy <- function(TA,mu,rho){
 # function that test the absolut fit
 
 pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,graph, Uinfo=FALSE,
-                   dn=FALSE, ww=FALSE, hs=FALSE, hsl=FALSE, hsp=FALSE){
+                   dn=FALSE, ww=FALSE, hs=FALSE, hsl=FALSE, hsp=FALSE, hspo=FALSE){
   
 	##########################################################
 	# Pseudo residuals
@@ -277,6 +277,25 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
     Z <- cbind(Z, pseudo.u.test(U_TA_HSMMp, 1, n, graphL[pP], "TA"))
     colnames(Z)[ncol(Z)] <- "TA_HSMMp"
   }
+  
+  if(hspo){
+    whpo <- tryCatch(HSMMpowi(SL, TA, missL, notMisLoc, mleMov$HSMMpo[1:2], mleMov$HSMMpo[3:4], mleMov$HSMMpo[5]),
+                    error=function(e){matrix(0, nrow=2,ncol=notMisLoc[length(notMisLoc)])})
+    U_SL_HSMMpo <- whpo[1,notMisLoc] * pexp(SL-SLmin,mleMov$HSMMpo[3]) +
+      whpo[2,notMisLoc] * pexp(SL-SLmin,mleMov$HSMMpo[4])
+    
+    U_TA_HSMMpo <- whpo[1,notMisLoc] * pvonmises(TA_C, circular(0), 0) +
+      whpo[2,notMisLoc] * pvonmises(TA_C, circular(0), mleMov$HSMMpo[5])
+    
+    # SO for SL, you have 3 parameters: lI, lE, a
+    # SO for TA, you have 1 parameter: lE
+    pP <- which(substring(names(mods), 1,nchar(names(mods))-5) == "HSMMpo")
+    Z <- cbind(Z, pseudo.u.test(U_SL_HSMMpo, 3, n, graphL[pP], "SL"))
+    colnames(Z)[ncol(Z)] <- "SL_HSMMpo"
+    Z <- cbind(Z, pseudo.u.test(U_TA_HSMMpo, 1, n, graphL[pP], "TA"))
+    colnames(Z)[ncol(Z)] <- "TA_HSMMpo"
+  }
+  
   #####
   # SL
   
@@ -373,6 +392,11 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
 	  PR <- cbind(PR, t(combP(Z[2,"SL_HSMMp"],Z[2,"TA_HSMMp"])))
 	  colnames(PR)[ncol(PR)] <- "HSMMp"
 	}
+	
+	if(hspo){
+	  PR <- cbind(PR, t(combP(Z[2,"SL_HSMMpo"],Z[2,"TA_HSMMpo"])))
+	  colnames(PR)[ncol(PR)] <- "HSMMpo"
+	}
 
   if(PRdetails & Uinfo){
     res <- list('PR'=PR,'Z'=Z, 
@@ -383,6 +407,7 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
     if(exists("U_SL_HSMMs")){res$U <- cbind(res$U,U_SL_HSMMs,U_TA_HSMMs)}
     if(exists("U_SL_HSMMl")){res$U <- cbind(res$U,U_SL_HSMMl,U_TA_HSMMl)}
     if(exists("U_SL_HSMMp")){res$U <- cbind(res$U,U_SL_HSMMp,U_TA_HSMMp)}
+    if(exists("U_SL_HSMMpo")){res$U <- cbind(res$U,U_SL_HSMMpo,U_TA_HSMMpo)}
     return(res)
   }else if(PRdetails){
     return(list('PR'=PR,'Z'=Z))
@@ -395,6 +420,7 @@ pseudo <- function(SL,TA_C,TA,SLmin,SLmax,missL,notMisLoc,n,mleMov,PRdetails,gra
     if(exists("U_SL_HSMMs")){res$U <- cbind(res$U,U_SL_HSMMs,U_TA_HSMMs)}
     if(exists("U_SL_HSMMl")){res$U <- cbind(res$U,U_SL_HSMMl,U_TA_HSMMl)}
     if(exists("U_SL_HSMMp")){res$U <- cbind(res$U,U_SL_HSMMp,U_TA_HSMMp)}
+    if(exists("U_SL_HSMMpo")){res$U <- cbind(res$U,U_SL_HSMMpo,U_TA_HSMMpo)}
     return(res)
   }else{
     return(PR) 

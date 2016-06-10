@@ -169,69 +169,7 @@ nllCCRW <- function(SL,TA,x,parF){
 # CCRW for numerical maximization (instead of EM-algorithm)
 
 nllCCRWdn <- function(SL,TA,x,parF=list(SLmin=min(SL),missL=missL)){
-  # ParF should have SLmin and missL
-  
-  # Based on ch3 of Zucchini & MacDonald 2009
-  # This is likelihood function that can be numerically maximize with respect to the parameters
-  
-  ####
-  # Basic theory
-  # So for a vector of observations x of length n (note that in text n is T)
-  
-  # We use the forward probability alpha's
-  # alpha_1 = delta %*% P(x_1)
-  # delta is the initial distribution of the Markov chain (states) (and should sum to 1)
-  # P(x_t) is the diagonal matrix of the state-dependent probability
-  # of the observation at time t
-  # P(x_t) = diag(p_1(x), ..., p_m(x))
-  
-  # alpha_t = alpha_{t-1} %*% Gamma %*% P(x_t) 
-  # for t = {2,..,n}
-  # Gamma is the transition probability matrix for which the rows add to 1
-  
-  # L_T = alpha_n %*% t(1)
-  # SO the likelihood is recursive
-  
-  ###
-  # Scaling 
-  # Instead of using the log(p+q) = lp + log(1 + exp(lq-lp))
-  # where p > q and lp = log(p) and lq = log(q)
-  # as we did for the CCRW_IM
-  # We use the scaled likelihood
-  # based on scaling the vector of forward probability  alpha_t
-  # See section 3.2 p.46 of Z&M (2009)
-  # The scaling (like the method we used before) reduced the potential
-  # under- and over- flow (i.e. getting 0 and Inf)
-  
-  # We define the scaling weight w_t such that:
-  # phi_t = alpha_t / w_t
-  # w_t = alpha_t %*% t(1)
-  
-  # I think the idea is that the alpha_t becomes smaller and smaller
-  # So the sum of the elements of alpha_t, which is w_t is also smaller
-  # This makes phi_t bigger
-  
-  # To initialise
-  # w_1 = alpha_1 %*% t(1) = delta %*% P(x_1) %*% t(1)
-  # phi_1 = alpha_1 / w_1
-  
-  # Since:
-  # alpha_t = alpha_{t-1} %*% Gamma %*% P(x_t)
-  # and we can write simplfy the notation by B_t = Gamma %*% P(x_t)
-  # w_t %*% phi_t = w_{t-1} %*% phi_{t-1} %*% B_t
-  # So L_T = alpha_T %*% t(1) = w_T %*% phi_T %*% t(1)
-  # since phi_T = alpha_T / w_T
-  # and w_T = alpha_T %*% t(1)
-  # phi_T %*% t(1) = alpha_T %*% t(1) / alpha_T %*% t(1) = 1 (scalar)
-  # So L_T = w_T %*% phi_T %*% t(1) = w_T (scalar)
-  
-  # since w_t %*% phi_t = w_{t-1} %*% phi_{t-1} %*% B_t
-  # and phi_t %*% t(1) = 1 (scalar) (and w_t is a scalar)
-  # w_t = w_{t-1} %*% phi_{t-1} %*% B_t  %*% t(1)
-  # so 
-  # L_T = prod_{t=1}^T (phi_{t-1} %*% B_t  %*% t(1))
-  # log L_T = sum_{t=1}^T  log(phi_{t-1} %*% B_t  %*% t(1))
-  
+ 
   ####
   # Set parameters
   n <- length(SL) # Length of time serie, refered as T in text
@@ -799,6 +737,54 @@ nllHSMMp <- function(SL, TA, x, parF){
   # Note that for missing location observation probablility is 1
   obsProb[notMisLoc,1:m[1]] <-  dweibull(SL, shI, scI) * dwrpcauchy(TA, 0, 0)
   obsProb[notMisLoc,(m[1]+1):sum(m)] <-  dweibull(SL, shE, scE) * dwrpcauchy(TA, 0, rE)
+  
+  foo <- delta  
+  lscale <- 0
+  for (i in 1:n){
+    foo <- foo%*%gamma*obsProb[i,]  
+    sumfoo <- sum(foo)
+    lscale <- lscale+log(sumfoo)
+    foo <- foo/sumfoo
+    #if(any(is.nan(foo))){stop(print(i))}
+  }
+  return(-lscale)
+}
+
+################
+# HSMM but with poisson instead of negbinom, since I often get negbinomial with large size,
+# which is the equivalent of poison
+nllHSMMpo <- function(SL, TA, x, parF){
+  SLmin <- min(SL)
+  # parf need missL and notMissLoc and m
+  #####
+  # Parameters to estimate - transforming for unconstrained parameter
+  xp <- itransParHSMMpo(x)
+  laI <- xp[1]
+  laE <- xp[2]
+  lI <- xp[3]
+  lE <- xp[4]
+  kE <- xp[5]
+  
+  ##
+  # To allow to fix some of the parameters
+  # This is need for the profile likelihood CI
+  if(length(parF)>0){
+    for (i in 1:length(parF)){
+      assign(names(parF[i]),parF[[i]])
+    }
+  }
+  
+  gamma <- gen.Gamma.pois(m,c(laI,laE)) # Creating transition probility matrix
+  delta <- solve(t(diag(sum(m))-gamma+1),rep(1,sum(m))) # Getting the probility of the first step - stationary distribution
+  
+  # This is the real length of the time series (include missing data)
+  n <- length(SL) + sum(missL-1)
+  
+  obsProb <- matrix(rep(1,sum(m)*n),nrow=n)
+  # Making a matrix with all the probability of observations for each state
+  # Note that for missing location observation probablility is 1
+  obsProb[notMisLoc,1:m[1]] <-  dexp(SL-SLmin,lI) * dvm(TA, 0, 0)
+  obsProb[notMisLoc,(m[1]+1):sum(m)] <-  dexp(SL-SLmin,lE) * dvm(TA, 0, kE)
   
   foo <- delta  
   lscale <- 0

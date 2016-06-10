@@ -23,7 +23,7 @@ CI.Hessian <- function(SL,TA, parMLE, trans.par, M, parF, NLL){
 	# Get a numerial estimate of the Hessian from the optimisation routine
 	# but this is for the working parameter
 	# the nlm often crashes for CCRW so can't use it for hessian
-	H <- hessian(NLL, trans.par(parMLE), SL=SL,TA=TA,parF=parF)
+	H <- hessian(NLL, trans.par(parMLE), SL=SL, TA=TA, parF=parF)
 
 	# Transform for real parameter
 	# From Zucch & MacD 2009
@@ -158,7 +158,7 @@ ciCCRWww <- function(SL,TA,missL,mleM){
 #######################################
 # HSMM - semi hidden mark model with wrapped Cauchy and weibull
 # HSMM general function for CI
-ciHSMMg <- function(SL,TA,missL,notMisLoc,mleM, nPar, NLL, transPar){
+ciHSMMg <- function(SL,TA, missL, notMisLoc, mleM, nPar, NLL, transPar){
   # Table for the CI
   CI <- matrix(NA, nrow=nPar, ncol=3)
   rownames(CI) <- names(mleM[1:nPar])

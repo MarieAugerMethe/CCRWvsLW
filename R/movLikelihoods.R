@@ -4,7 +4,7 @@
 # Updated: April 3, 2013
 
 movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=TRUE, dn=FALSE, 
-                           ww=FALSE, hs=FALSE, hsl=FALSE, hss=FALSE, hsp=FALSE){
+                           ww=FALSE, hs=FALSE, hsl=FALSE, hss=FALSE, hsp=FALSE, hspo=FALSE){
   
   #######################################
   # This script estimates the parameters and calculates the AIC of multiple movement models:
@@ -115,6 +115,11 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=T
     mleMov$HSMMp <- mleHSMMp
   }
   
+  if(hspo){
+    mleHSMMpo <- mnllHSMMpo(SL, TA, TA_C, missL, notMisLoc)  
+    mleMov$HSMMpo <- mleHSMMpo
+  }
+  
   ######################
   # Calculating the CI
   
@@ -173,40 +178,68 @@ movLikelihoods <- function(movltraj, graph=TRUE, PRdetails=FALSE, TAc=0, conts=T
                         mleHSMMp, 7, nllHSMMp, transParHSMMp)
   }
   
+  if(hspo){
+    CI$HSMMpo <- ciHSMMg(SL, TA, missL, notMisLoc,
+                        mleHSMMpo, 5, nllHSMMpo, transParHSMMpo)
+  }
+  
   #######
   # Test of absolute fit
 	pseudoRes <- pseudo(SL, TA_C, TA, SLmin, SLmax, missL, notMisLoc, n,
-                      mleMov, PRdetails, graph, dn=dn, ww=ww, hs=hs, hsl=hsl, hsp=hsp)
+                      mleMov, PRdetails, graph, dn=dn, ww=ww, hs=hs, hsl=hsl, hsp=hsp, hspo=hspo)
   
   
   
 	if(graph==TRUE){
-	  # Plot the best CCRW if ww explored
-	  if(ww){
-	    wwB <- which.min(c(mleMov$CCRW["AICc"], mleMov$CCRWww["AICc"])) == 2
-	  }else{
-	    wwB <- FALSE
+	  aiccAllccrw <- matrix(NA, ncol=length(CI)-5)
+	  colnames(aiccAllccrw) <- c("o", "dn", "ww", "hs", "hsl", "hss", "hsp", "hspo")[c(!dn,dn,ww,hs,hsl,hss,hsp,hspo)]
+	  aiccAllccrw[1] <- mleMov[[1]]["AICc"]
+	  if(ncol(aiccAllccrw)>1){
+	    for(i in 2:ncol(aiccAllccrw)){
+	      aiccAllccrw[i] <- mleMov[[i+6]]["AICc"]
+	    }  
 	  }
-    layout(matrix(1:3,nrow=1))
-    if(wwB){
+	  
+	  # Best ccrw
+	  ccrwBm <- colnames(aiccAllccrw)[which.min(aiccAllccrw)]
+	  
+# 	  # Plot the best CCRW if ww explored
+# 	  if(ww){
+# 	    wwB <- which.min(c(mleMov$CCRW["AICc"], mleMov$CCRWww["AICc"])) == 2
+# 	  }else{
+# 	    wwB <- FALSE
+# 	  }
+    
+    if(ccrwBm == "o"){
+      gamm <- matrix(c(mleMov$CCRW[1], 1-mleMov$CCRW[2], 1-mleMov$CCRW[1], mleMov$CCRW[2]),2)
+      w <- HMMwi(SL,TA,missL,SLmin, mleMov$CCRW[3:4], mleMov$CCRW[5], gamm,
+                 mleMov$CCRW[6:7], notMisLoc)
+    }else if(ccrwBm == "dn"){
+      gamm <- matrix(c(mleMov$CCRW[1], 1-mleMov$CCRW[2], 1-mleMov$CCRW[1], mleMov$CCRW[2]),2)
+      w <- HMMwi(SL,TA,missL,SLmin, mleMov$CCRW[3:4], mleMov$CCRW[5], gamm,
+                 mleMov$CCRW[8:9], notMisLoc)
+    }else if(ccrwBm == "ww"){
       gamm <- matrix(c(mleMov$CCRWww[1], 1-mleMov$CCRWww[2], 1-mleMov$CCRWww[1], mleMov$CCRWww[2]),2)
       w <- HMMwiww(SL, TA, missL, 
-                     mleMov$CCRWww[5:6], mleMov$CCRWww[3:4], mleMov$CCRWww[7], gamm, mleMov$CCRWww[9:10],
-                     notMisLoc)
-    }else{
-      gamm <- matrix(c(mleMov$CCRW[1], 1-mleMov$CCRW[2], 1-mleMov$CCRW[1], mleMov$CCRW[2]),2)
-      if(dn){
-        w <- HMMwi(SL,TA,missL,SLmin, mleMov$CCRW[3:4], mleMov$CCRW[5], gamm,
-                   mleMov$CCRW[8:9], notMisLoc)
-      }else{
-        w <- HMMwi(SL,TA,missL,SLmin, mleMov$CCRW[3:4], mleMov$CCRW[5], gamm,
-                   mleMov$CCRW[6:7], notMisLoc)
-      }  
+                   mleMov$CCRWww[5:6], mleMov$CCRWww[3:4], mleMov$CCRWww[7], gamm, mleMov$CCRWww[9:10],
+                   notMisLoc)
+    }else if(ccrwBm == "hs"){
+      w <- HSMMwi(SL, TA, missL, notMisLoc, mleMov$HSMM[1:2], mleMov$HSMM[3:4], mleMov$HSMM[5:6], mleMov$HSMM[7:8], mleMov$HSMM[9])
+    }else if(ccrwBm == "hsl"){
+      w <- HSMMwi(SL, TA, missL, notMisLoc, mleMov$HSMMl[1:2], mleMov$HSMMl[rep(3,2)], mleMov$HSMMl[4:5], mleMov$HSMMl[6:7], mleMov$HSMMl[8])
+    }else if(ccrwBm == "hsp"){
+      w <- tryCatch(HSMMpwi(SL, TA, missL, notMisLoc, mleMov$HSMMp[1:2], mleMov$HSMMp[3:4], mleMov$HSMMp[5:6], mleMov$HSMMp[7]),
+                      error=function(e){matrix(0, nrow=2,ncol=notMisLoc[length(notMisLoc)])})
+    }else if(ccrwBm == "hspo"){
+      w <- tryCatch(HSMMpowi(SL, TA, missL, notMisLoc, mleMov$HSMMpo[1:2], mleMov$HSMMpo[3:4], mleMov$HSMMpo[5]),
+                       error=function(e){matrix(0, nrow=2,ncol=notMisLoc[length(notMisLoc)])})
     }
+    
+	  layout(matrix(1:3,nrow=1))    
     plot(movltraj, addpoints=FALSE, final=FALSE)
     points(movltraj[[1]]$x,movltraj[[1]]$y,bg=c(0,grey(w[2,]),0),pch=21, cex=c(0,w[1,],0)+0.7)
 		# histogram with fit
-    fitGraph(SL, TA, SLmin, SLmax, n, mleMov)
+    fitGraph(SL, TA, SLmin, SLmax, n, mleMov, ccrwBm)
 	}
 
 	res <- list(mleMov, pseudoRes, CI)
