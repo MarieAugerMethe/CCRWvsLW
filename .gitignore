@@ -5,7 +5,6 @@ Read-and-delete-me
 .Rproj.user
 
 # Data files
-*.csv
 *.RData
 
 # Compiled files
